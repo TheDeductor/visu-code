@@ -27,7 +27,7 @@ nodes:
     kind: api
     group: backend
     status: built
-    description: Checks credentials and creates a session cookie.
+    description: Checks credentials, throttles attempts and creates a session cookie.
     plain: The server checks your details and remembers you.
     refs:
       - path: src/routes/auth.ts
@@ -51,6 +51,14 @@ nodes:
       - path: src/session.ts
         symbol: createSession
       - path: prisma/schema.prisma
+  - id: rate-limit
+    label: Rate limiter
+    kind: service
+    group: backend
+    status: planned
+    description: "Planned: limit repeated login attempts per IP."
+    plain: A guard that slows down people guessing passwords.
+    phase: hardening
 edges:
   - from: login-form
     to: auth-api
@@ -64,6 +72,10 @@ edges:
     to: session-store
     label: save session
     kind: writes
+  - from: auth-api
+    to: rate-limit
+    label: checks
+    kind: depends
 tags:
   - auth
 walkthrough:
@@ -77,3 +89,6 @@ walkthrough:
   - focus:
       - session-store
     text: A session is stored and a cookie is set.
+notes:
+  - auth.md
+phase: auth-mvp

@@ -1,2 +1,11 @@
 schema: 1
-phases: []
+phases:
+  - id: auth-mvp
+    title: Auth MVP
+    goal: Users can sign in and sessions persist.
+    status: active
+    started: 2026-11-04
+  - id: hardening
+    title: Hardening
+    goal: Throttle login attempts and tighten session expiry.
+    status: planned
