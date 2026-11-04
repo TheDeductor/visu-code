@@ -1,0 +1,51 @@
+{
+  "name": "vibemap",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Living visual project memory for AI-assisted codebases. Local-first diagrams, notes and history driven by any coding agent.",
+  "type": "module",
+  "bin": {
+    "vibemap": "dist/cli.js"
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "npm run build:web && npm run build:cli",
+    "build:web": "vite build --config viewer/vite.config.ts",
+    "build:cli": "tsup",
+    "dev:web": "vite --config viewer/vite.config.ts",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "check": "npm run typecheck && npm run test",
+    "start": "node dist/cli.js"
+  },
+  "dependencies": {
+    "chokidar": "^4.0.3",
+    "commander": "^14.0.0",
+    "roughjs": "^4.6.6",
+    "typescript": "^5.9.3",
+    "ws": "^8.18.3",
+    "yaml": "^2.8.1",
+    "zod": "^3.25.76",
+    "zod-to-json-schema": "^3.25.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24.10.0",
+    "@types/react": "^19.2.2",
+    "@types/react-dom": "^19.2.2",
+    "@types/ws": "^8.18.1",
+    "@vitejs/plugin-react": "^5.1.0",
+    "playwright": "^1.64.1",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "tsup": "^8.5.0",
+    "vite": "^8.3.5",
+    "vitest": "^5.1.0"
+  }
+}

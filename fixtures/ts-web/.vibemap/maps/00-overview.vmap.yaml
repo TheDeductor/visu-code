@@ -1,0 +1,64 @@
+schema: 1
+title: Acme Notes overview
+level: overview
+direction: right
+summary: "A small note-taking app: browser UI, Express API, PostgreSQL via Prisma."
+type: graph
+groups:
+  - id: frontend
+    label: Browser
+    kind: boundary
+  - id: backend
+    label: Server
+    kind: boundary
+  - id: data
+    label: Data
+    kind: boundary
+nodes:
+  - id: browser
+    label: Browser UI
+    kind: ui
+    group: frontend
+    status: built
+    description: React screens. LoginForm collects credentials.
+    plain: The page you see in your browser.
+    refs:
+      - path: src/components/LoginForm.tsx
+        symbol: LoginForm
+  - id: api
+    label: Express API
+    kind: service
+    group: backend
+    status: built
+    description: Serves login and notes endpoints.
+    plain: The server that checks your details and stores notes.
+    refs:
+      - path: src/server.ts
+  - id: database
+    label: PostgreSQL
+    kind: database
+    group: data
+    status: built
+    description: "Users, notes and sessions, modelled with Prisma."
+    refs:
+      - path: prisma/schema.prisma
+  - id: person
+    label: Person
+    kind: actor
+    group: frontend
+    description: A person signing in or writing notes.
+edges:
+  - from: person
+    to: browser
+    label: uses
+    kind: flow
+  - from: browser
+    to: api
+    label: HTTP /api
+    kind: calls
+  - from: api
+    to: database
+    label: Prisma
+    kind: reads
+tags:
+  - overview

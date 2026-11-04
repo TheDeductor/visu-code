@@ -1,0 +1,79 @@
+schema: 1
+title: Login flow
+level: feature
+direction: right
+summary: "How a person signs in with email and password."
+type: graph
+groups:
+  - id: frontend
+    label: Browser
+    kind: boundary
+  - id: backend
+    label: Server
+    kind: boundary
+nodes:
+  - id: login-form
+    label: Login form
+    kind: ui
+    group: frontend
+    status: built
+    description: Collects email and password and posts them to the API.
+    plain: The page where you type your email and password.
+    refs:
+      - path: src/components/LoginForm.tsx
+        symbol: LoginForm
+  - id: auth-api
+    label: POST /api/login
+    kind: api
+    group: backend
+    status: built
+    description: Checks credentials and creates a session cookie.
+    plain: The server checks your details and remembers you.
+    refs:
+      - path: src/routes/auth.ts
+        symbol: loginHandler
+    tags: []
+  - id: users-db
+    label: User table
+    kind: database
+    group: backend
+    status: built
+    description: Looks up the user by email.
+    refs:
+      - path: prisma/schema.prisma
+  - id: session-store
+    label: Session store
+    kind: cache
+    group: backend
+    status: built
+    description: Stores session rows that back the session cookie.
+    refs:
+      - path: src/session.ts
+        symbol: createSession
+      - path: prisma/schema.prisma
+edges:
+  - from: login-form
+    to: auth-api
+    label: email + password
+    kind: calls
+  - from: auth-api
+    to: users-db
+    label: look up user
+    kind: reads
+  - from: auth-api
+    to: session-store
+    label: save session
+    kind: writes
+tags:
+  - auth
+walkthrough:
+  - focus:
+      - login-form
+    text: The person types their email and password.
+  - focus:
+      - auth-api
+      - users-db
+    text: The API looks up the user and checks the password.
+  - focus:
+      - session-store
+    text: A session is stored and a cookie is set.

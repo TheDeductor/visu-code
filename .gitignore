@@ -1,0 +1,11 @@
+node_modules/
+dist/
+.vibemap/.cache/
+*.log
+.DS_Store
+Thumbs.db
+coverage/
+test-results/
+playwright-report/
+demo/.vibemap/.cache/
+fixtures/**/.vibemap/.cache/

@@ -1,0 +1,15 @@
+{
+  "ops": [
+    { "op": "set_meta", "set": { "summary": "A small note-taking app: browser UI, Express API, PostgreSQL via Prisma.", "tags": ["overview"] } },
+    { "op": "add_group", "group": { "id": "frontend", "label": "Browser", "kind": "boundary" } },
+    { "op": "add_group", "group": { "id": "backend", "label": "Server", "kind": "boundary" } },
+    { "op": "add_group", "group": { "id": "data", "label": "Data", "kind": "boundary" } },
+    { "op": "add_node", "node": { "id": "browser", "label": "Browser UI", "kind": "ui", "group": "frontend", "status": "built", "description": "React screens. LoginForm collects credentials.", "plain": "The page you see in your browser.", "refs": [{ "path": "src/components/LoginForm.tsx", "symbol": "LoginForm" }] } },
+    { "op": "add_node", "node": { "id": "api", "label": "Express API", "kind": "service", "group": "backend", "status": "built", "description": "Serves login and notes endpoints.", "plain": "The server that checks your details and stores notes.", "refs": [{ "path": "src/server.ts" }] } },
+    { "op": "add_node", "node": { "id": "database", "label": "PostgreSQL", "kind": "database", "group": "data", "status": "built", "description": "Users, notes and sessions, modelled with Prisma.", "refs": [{ "path": "prisma/schema.prisma" }] } },
+    { "op": "add_node", "node": { "id": "person", "label": "Person", "kind": "actor", "group": "frontend", "description": "A person signing in or writing notes." } },
+    { "op": "add_edge", "edge": { "from": "person", "to": "browser", "label": "uses", "kind": "flow" } },
+    { "op": "add_edge", "edge": { "from": "browser", "to": "api", "label": "HTTP /api", "kind": "calls" } },
+    { "op": "add_edge", "edge": { "from": "api", "to": "database", "label": "Prisma", "kind": "reads" } }
+  ]
+}
