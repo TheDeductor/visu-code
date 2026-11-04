@@ -369,6 +369,8 @@ export interface ChangeEntry {
   author: string;
   maps: string[];
   commit?: string | null;
+  /** Map id to the revision the change delta was computed against. */
+  bases?: Record<string, string>;
   delta: ChangeDelta;
   body: string;
   file: string;

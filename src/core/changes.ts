@@ -59,6 +59,7 @@ export function parseChange(project: Project, rel: string): ParsedChange {
         author: data.author,
         maps: data.maps ?? [],
         commit: data.commit ?? null,
+        bases: data.bases,
         delta: data.delta ?? { ...EMPTY_DELTA },
         body,
         file: rel,
@@ -113,6 +114,7 @@ export interface AddChangeInput {
   phase?: string;
   author?: string;
   delta?: ChangeDelta;
+  bases?: Record<string, string>;
   body?: string;
 }
 
@@ -135,6 +137,7 @@ export async function addChangeEntry(project: Project, input: AddChangeInput): P
     author: input.author ?? `human:${process.env.USERNAME ?? process.env.USER ?? 'local'}`,
     maps: input.maps,
     commit: null,
+    ...(input.bases && Object.keys(input.bases).length ? { bases: input.bases } : {}),
     delta: input.delta ?? { ...EMPTY_DELTA },
   };
   const body = input.body ?? buildChangeBody(input);
@@ -151,6 +154,7 @@ export async function addChangeEntry(project: Project, input: AddChangeInput): P
     author: data.author,
     maps: data.maps,
     commit: null,
+    bases: input.bases,
     delta: data.delta,
     body,
     file: rel,

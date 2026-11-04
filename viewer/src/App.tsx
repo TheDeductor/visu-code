@@ -749,26 +749,34 @@ export function App(): React.ReactElement {
         toast('This change entry has no map to diff.', 'warn');
         return;
       }
-      let points = mapId === selectedMapRef.current ? history : [];
-      if (!points.length) {
-        try {
-          points = (await api.history(mapId)).history;
-        } catch {
-          points = [];
+      let baseRev = change.bases?.[mapId];
+      let label = `before "${change.title}"`;
+      if (!baseRev) {
+        let points = mapId === selectedMapRef.current ? history : [];
+        if (!points.length) {
+          try {
+            points = (await api.history(mapId)).history;
+          } catch {
+            points = [];
+          }
         }
+        // The journal immediately before the entry is only a fallback; older
+        // entries may predate stored baselines.
+        const point = points.find((item) => item.ts < change.date);
+        baseRev = point?.rev;
+        label = point?.summary ?? label;
       }
-      const point = points.find((item) => item.ts < change.date);
-      if (!point) {
+      if (!baseRev) {
         toast('No earlier timeline point to compare this change against. Make one map save or commit before the change.', 'warn');
         return;
       }
       if (detailRef.current?.id !== mapId) {
-        setPendingDiff({ map: mapId, base: point.rev, label: point.summary });
+        setPendingDiff({ map: mapId, base: baseRev, label });
         setSelectedMapId(mapId);
         setTab('maps');
         return;
       }
-      void openDiff(point.rev, point.summary);
+      void openDiff(baseRev, label);
     },
     [history, openDiff, toast],
   );

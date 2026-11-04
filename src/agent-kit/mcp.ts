@@ -210,7 +210,8 @@ export async function runMcpServer(rootInput?: string): Promise<void> {
         if (name === 'vibemap_change_add') {
           const maps = Array.isArray(args.maps) ? args.maps.filter((m): m is string => typeof m === 'string') : [];
           if (!maps.length) throw new Error('maps[] is required');
-          const delta = await computeChangeDelta(project, maps);
+          const computed = await computeChangeDelta(project, maps);
+          const delta = computed.delta;
           const entry = await addChangeEntry(project, {
             title: String(args.title ?? ''),
             why: String(args.why ?? ''),
@@ -221,6 +222,7 @@ export async function runMcpServer(rootInput?: string): Promise<void> {
             phase: typeof args.phase === 'string' ? args.phase : undefined,
             author: 'agent:mcp',
             delta,
+            bases: computed.bases,
           });
           await commitBaselines(project, maps);
           result(id, textResult(JSON.stringify({ id: entry.id, file: entry.file, delta }, null, 2)));

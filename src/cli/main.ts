@@ -419,7 +419,8 @@ changeCommand
     if (options.phase && !readPhases(projectItem).phases.some((p) => p.id === options.phase)) {
       throw new CliError(`Unknown phase "${options.phase}".`, EXIT_VALIDATION);
     }
-    const delta = await computeChangeDelta(projectItem, maps);
+    const computed = await computeChangeDelta(projectItem, maps);
+    const delta = computed.delta;
     const entry = await addChangeEntry(projectItem, {
       title: options.title,
       why: options.why,
@@ -430,6 +431,7 @@ changeCommand
       phase: options.phase,
       author: options.author,
       delta,
+      bases: computed.bases,
     });
     await commitBaselines(projectItem, maps);
     if (options.json) printJson({ entry, delta });

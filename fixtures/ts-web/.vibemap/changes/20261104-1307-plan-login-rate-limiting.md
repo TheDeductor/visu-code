@@ -8,6 +8,8 @@ phase: hardening
 author: agent:claude-code
 maps:
   - auth/login-flow
+bases:
+  auth/login-flow: 9bafd2e8a2d6a3ff70ad713e5e5dc6fbfd540702
 commit: b420df4
 delta:
   added_nodes:

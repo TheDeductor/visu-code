@@ -395,6 +395,7 @@ export const ChangeFrontmatterSchema = z
     author: z.string().min(1).default('human:unknown'),
     maps: z.array(MapIdSchema).default([]),
     commit: z.string().nullable().optional(),
+    bases: z.record(z.string()).optional(),
     delta: DeltaSchema.default({
       added_nodes: [],
       modified_nodes: [],

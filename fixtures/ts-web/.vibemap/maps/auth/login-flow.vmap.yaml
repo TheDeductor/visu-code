@@ -76,6 +76,10 @@ edges:
     to: rate-limit
     label: checks
     kind: depends
+  - from: login-form
+    to: session-store
+    label: sets cookie
+    kind: flow
 tags:
   - auth
 walkthrough:

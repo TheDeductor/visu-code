@@ -173,7 +173,9 @@ describe('ops engine', () => {
       ],
       { origin: 'agent' },
     );
-    const delta = await computeChangeDelta(project, ['auth/login-flow']);
+    const computed = await computeChangeDelta(project, ['auth/login-flow']);
+    const delta = computed.delta;
+    expect(computed.bases['auth/login-flow']).toBeTruthy();
     expect(delta.added_nodes).toContain('auth/login-flow#session-store');
     expect(delta.added_edges).toBe(1);
     const entry = await addChangeEntry(project, {
@@ -182,10 +184,11 @@ describe('ops engine', () => {
       maps: ['auth/login-flow'],
       type: 'feature',
       delta,
+      bases: computed.bases,
     });
     expect(entry.file).toContain('.vibemap/changes/');
     await commitBaselines(project, ['auth/login-flow']);
-    const secondDelta = await computeChangeDelta(project, ['auth/login-flow']);
+    const secondDelta = (await computeChangeDelta(project, ['auth/login-flow'])).delta;
     expect(secondDelta.added_nodes).toEqual([]);
   });
 

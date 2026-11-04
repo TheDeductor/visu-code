@@ -1,6 +1,7 @@
 node_modules/
 dist/
 .tmp/
+.commandcode/
 .vibemap/.cache/
 *.log
 .DS_Store

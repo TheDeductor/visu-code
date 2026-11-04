@@ -65,8 +65,14 @@ function emptyMap(type: MapType, title: string): VibeMap {
   return { ...base, type: 'mermaid', source: 'graph TD\n' };
 }
 
-export async function computeChangeDelta(project: Project, mapIds: string[]): Promise<ChangeDelta> {
+export interface ChangeDeltaResult {
+  delta: ChangeDelta;
+  bases: Record<string, string>;
+}
+
+export async function computeChangeDelta(project: Project, mapIds: string[]): Promise<ChangeDeltaResult> {
   const delta: ChangeDelta = { added_nodes: [], modified_nodes: [], removed_nodes: [], added_edges: 0, removed_edges: 0 };
+  const bases: Record<string, string> = {};
   const baselines = readBaselines(project).baselines;
   for (const mapId of mapIds) {
     let head;
@@ -78,6 +84,7 @@ export async function computeChangeDelta(project: Project, mapIds: string[]): Pr
     const baseline = baselines[mapId];
     let baseMap: VibeMap | null = null;
     if (baseline) {
+      bases[mapId] = baseline.rev;
       const point = await journalPointAt(project, mapId, baseline.rev);
       if (point) {
         const { parseMapContent } = await import('./maps.js');
@@ -93,7 +100,7 @@ export async function computeChangeDelta(project: Project, mapIds: string[]): Pr
     delta.added_edges += diff.addedEdges.length;
     delta.removed_edges += diff.removedEdges.length;
   }
-  return delta;
+  return { delta, bases };
 }
 
 export async function commitBaselines(project: Project, mapIds: string[]): Promise<void> {

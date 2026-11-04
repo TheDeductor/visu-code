@@ -27,3 +27,5 @@ not. It also keeps the browser code simple: it never needs to read the token.
   handler before persistence.
 
 See [[00-overview#database]] for how sessions fit into the overall data model.
+
+Verified in the local viewer.
