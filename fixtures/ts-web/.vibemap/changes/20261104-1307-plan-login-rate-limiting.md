@@ -8,7 +8,7 @@ phase: hardening
 author: agent:claude-code
 maps:
   - auth/login-flow
-commit: null
+commit: b420df4
 delta:
   added_nodes:
     - auth/login-flow#rate-limit
