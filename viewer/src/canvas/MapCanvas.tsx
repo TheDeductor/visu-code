@@ -153,6 +153,7 @@ function EdgeView({ edge, theme, dimmed, markerId }: { edge: LayoutEdge; theme: 
       <path d={edge.path} fill="none" stroke="#495057" strokeWidth={theme.strokeWidth} markerEnd={`url(#${markerId})`} />
       {edge.label && edge.labelLines.length ? (
         <g>
+          <title>{edge.label}</title>
           <rect
             x={edge.labelPos.x - labelWidth / 2}
             y={edge.labelPos.y - labelHeight / 2}
@@ -161,7 +162,7 @@ function EdgeView({ edge, theme, dimmed, markerId }: { edge: LayoutEdge; theme: 
             rx={5}
             fill="var(--canvas-bg, #fff)"
             stroke="var(--line, #dee2e6)"
-            opacity={0.94}
+            fillOpacity={0.88}
           />
           <text x={edge.labelPos.x} y={edge.labelPos.y - (edge.labelLines.length - 1) * 8.5} textAnchor="middle" dominantBaseline="middle" fontSize={12.5} fill="#495057">
             {edge.labelLines.map((line, index) => (
@@ -245,25 +246,70 @@ export function MapCanvas(props: CanvasProps): React.ReactElement {
   const nodeById = useMemo(() => new Map<string, import('@core/types').VibeNode>((graphMap?.nodes ?? []).map((node) => [node.id, node] as const)), [graphMap]);
   const focusSet = walkthroughFocus ? new Set(walkthroughFocus) : null;
 
-  const fit = useCallback(() => {
+  const [floorApplied, setFloorApplied] = useState(false);
+  const lastLayoutSizeRef = useRef<{ w: number; h: number }>({ w: layout.width, h: layout.height });
+
+  const fit = useCallback((ignoreFloor = false) => {
     const element = wrapRef.current;
     if (!element) return;
     const rect = element.getBoundingClientRect();
     if (!rect.width || !rect.height) return;
-    const zoom = Math.max(0.25, Math.min(1.25, Math.min((rect.width - 70) / Math.max(1, layout.width), (rect.height - 70) / Math.max(1, layout.height))));
-    setViewport({
-      zoom,
-      x: Math.max(20, (rect.width - layout.width * zoom) / 2),
-      y: Math.max(20, (rect.height - layout.height * zoom) / 2),
-    });
+
+    const naturalZoom = Math.min((rect.width - 70) / Math.max(1, layout.width), (rect.height - 70) / Math.max(1, layout.height));
+    const shouldApplyFloor = !ignoreFloor && naturalZoom < 0.7;
+    const zoom = shouldApplyFloor
+      ? Math.max(0.7, Math.min(1.25, naturalZoom))
+      : Math.max(0.2, Math.min(1.25, naturalZoom));
+
+    setFloorApplied(shouldApplyFloor);
+
+    if (shouldApplyFloor) {
+      let rootNode: { x: number; y: number; w: number; h: number } | undefined;
+      if (layout.type === 'graph' && layout.nodes.length > 0) rootNode = layout.nodes[0];
+      else if (layout.type === 'erd' && layout.entities.length > 0) rootNode = layout.entities[0];
+      else if (layout.type === 'sequence' && layout.participants.length > 0) rootNode = layout.participants[0];
+
+      if (rootNode) {
+        const rootCenterX = rootNode.x + rootNode.w / 2;
+        const rootCenterY = rootNode.y + rootNode.h / 2;
+        setViewport({
+          zoom,
+          x: rect.width / 2 - rootCenterX * zoom,
+          y: rect.height / 2 - rootCenterY * zoom,
+        });
+      } else {
+        setViewport({
+          zoom,
+          x: Math.max(20, (rect.width - layout.width * zoom) / 2),
+          y: Math.max(20, (rect.height - layout.height * zoom) / 2),
+        });
+      }
+    } else {
+      setViewport({
+        zoom,
+        x: Math.max(20, (rect.width - layout.width * zoom) / 2),
+        y: Math.max(20, (rect.height - layout.height * zoom) / 2),
+      });
+    }
+
     onZoom?.(zoom);
-  }, [layout.width, layout.height, onZoom]);
+  }, [layout, onZoom]);
 
   useEffect(() => {
-    fit();
-    // Only refit when the map changes or the user asks; do not fight live layout updates.
+    lastLayoutSizeRef.current = { w: layout.width, h: layout.height };
+    fit(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [detail.id, fitNonce]);
+
+  useEffect(() => {
+    const prev = lastLayoutSizeRef.current;
+    const dw = Math.abs(layout.width - prev.w) / Math.max(1, prev.w);
+    const dh = Math.abs(layout.height - prev.h) / Math.max(1, prev.h);
+    if (dw > 0.15 || dh > 0.15) {
+      lastLayoutSizeRef.current = { w: layout.width, h: layout.height };
+      fit(false);
+    }
+  }, [layout.width, layout.height, fit]);
 
   useEffect(() => {
     const element = wrapRef.current;
@@ -568,10 +614,18 @@ export function MapCanvas(props: CanvasProps): React.ReactElement {
         <button type="button" className="icon-btn" onClick={() => zoomBy(1 / 1.2)} aria-label="Zoom out">
           −
         </button>
-        <button type="button" className="icon-btn wide" onClick={fit} aria-label="Fit to screen" title="Fit (F)">
+        <button type="button" className="icon-btn wide" onClick={() => fit(false)} aria-label="Fit to screen" title="Fit (F)">
           Fit
         </button>
+        <button type="button" className="icon-btn wide" onClick={() => fit(true)} aria-label="Fit all (unrestricted)" title="Fit all">
+          Fit all
+        </button>
       </div>
+      {floorApplied ? (
+        <div className="canvas-hint zoom-readability-hint">
+          Zoomed to fit readability — <button type="button" style={{ background: 'none', border: 'none', color: 'var(--accent, #1971c2)', cursor: 'pointer', textDecoration: 'underline', font: 'inherit', padding: '0 4px' }} onClick={() => fit(true)}>Fit all</button>
+        </div>
+      ) : null}
       {diff ? (
         <div className="diff-legend" role="status">
           <span className="legend-added">added</span>

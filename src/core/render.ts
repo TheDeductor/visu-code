@@ -52,8 +52,8 @@ function edgeSvg(edge: LayoutEdge, theme: Theme): string {
   const mid = edge.labelPos;
   const labelWidth = Math.max(...edge.labelLines.map((l) => measureText(l, 13)), 0) + 12;
   const labelHeight = edge.labelLines.length * 17 + 6;
-  const label = edge.label
-    ? `<g><rect x="${mid.x - labelWidth / 2}" y="${mid.y - labelHeight / 2}" width="${labelWidth}" height="${labelHeight}" rx="4" fill="#ffffff" stroke="#dee2e6" stroke-width="1"/>${svgTextLines(edge.labelLines, mid.x, mid.y, 17, '#495057')}</g>`
+  const label = edge.label && edge.labelLines.length
+    ? `<g><title>${esc(edge.label)}</title><rect x="${mid.x - labelWidth / 2}" y="${mid.y - labelHeight / 2}" width="${labelWidth}" height="${labelHeight}" rx="4" fill="#ffffff" fill-opacity="0.88" stroke="#dee2e6" stroke-width="1"/>${svgTextLines(edge.labelLines, mid.x, mid.y, 17, '#495057')}</g>`
     : '';
   return `<g class="edge"><path d="${edge.path}" fill="none" stroke="#495057" stroke-width="${theme.strokeWidth}" marker-end="url(#arrow)"/>${label}</g>`;
 }
@@ -301,11 +301,13 @@ export function renderExcalidraw(map: VibeMap, theme: Theme, layout: LayoutResul
     for (const edge of layout.edges) {
       const el = base(`vm-${map.title}-e-${edge.id}`, 'arrow', edge.points[0]!.x, edge.points[0]!.y, 0, 0);
       el.points = edge.points.map((p) => [p.x - edge.points[0]!.x, p.y - edge.points[0]!.y] as [number, number]);
+      el.roundness = { type: 2 };
       el.customData = { vm: { kind: 'edge', id: edge.id, from: edge.from, to: edge.to } };
       el.boundElements = [];
-      for (const p of [edge.points[0]!, edge.points[3]!]) void p;
       elements.push(el);
-      if (edge.label) elements.push(textElement(`vm-${map.title}-el-${edge.id}`, edge.label, edge.labelPos.x - 40, edge.labelPos.y - 10, 13, theme));
+      if (edge.label && edge.labelLines.length) {
+        elements.push(textElement(`vm-${map.title}-el-${edge.id}`, edge.label, edge.labelPos.x - 40, edge.labelPos.y - 10, 13, theme));
+      }
     }
     for (const node of layout.nodes) {
       const shape = shapeForKind(node.kind);

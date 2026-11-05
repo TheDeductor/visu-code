@@ -103,6 +103,34 @@ describe('acceptance tests: layout quality and invariants', () => {
   ];
 
   describe('baseline inspection on repo fixtures', () => {
+    it('debugs edge crossings on fixtures', () => {
+      for (const name of fixtureNames) {
+        const map = loadMapFixture(name);
+        const layout = layoutMap(map, theme);
+        if (layout.type !== 'graph') continue;
+        for (const e of layout.edges) {
+          for (const n of layout.nodes) {
+            if (n.id === e.from || n.id === e.to) continue;
+            const box = { x: n.x - 6, y: n.y - 6, w: n.w + 12, h: n.h + 12 };
+            for (let i = 0; i < e.points.length - 1; i++) {
+              const p1 = e.points[i]!;
+              const p2 = e.points[i + 1]!;
+              const minX = Math.min(p1.x, p2.x);
+              const maxX = Math.max(p1.x, p2.x);
+              const minY = Math.min(p1.y, p2.y);
+              const maxY = Math.max(p1.y, p2.y);
+              if (maxX >= box.x && minX <= box.x + box.w && maxY >= box.y && minY <= box.y + box.h) {
+                console.log(`[${name}] Edge ${e.id} (${e.from}->${e.to}) crosses node ${n.id}`);
+                console.log(`   points:`, JSON.stringify(e.points));
+                console.log(`   seg: (${p1.x}, ${p1.y}) -> (${p2.x}, ${p2.y})`);
+                console.log(`   node box: (${box.x}, ${box.y}) ${box.w}x${box.h}`);
+              }
+            }
+          }
+        }
+      }
+    });
+
     it('captures baseline quality numbers for all 6 graph fixtures', () => {
       const summary: Record<string, LayoutQuality> = {};
       for (const name of fixtureNames) {
@@ -186,11 +214,27 @@ describe('acceptance tests: layout quality and invariants', () => {
 
     it('evaluates invariants across 200 fuzzed graphs', () => {
       let totalViolations = 0;
+      const sums = {
+        nodeOverlaps: 0,
+        groupOverlaps: 0,
+        groupMarginViolations: 0,
+        groupContainmentViolations: 0,
+        edgeNodeCrossings: 0,
+        labelOverlaps: 0,
+        portViolations: 0,
+      };
       for (let seed = 1; seed <= 200; seed++) {
         const graph = makeFuzzedGraph(seed);
         const layout = layoutMap(graph, theme);
         if (layout.type !== 'graph') continue;
         const q = layoutQuality(layout, theme);
+        sums.nodeOverlaps += q.nodeOverlaps;
+        sums.groupOverlaps += q.groupOverlaps;
+        sums.groupMarginViolations += q.groupMarginViolations;
+        sums.groupContainmentViolations += q.groupContainmentViolations;
+        sums.edgeNodeCrossings += q.edgeNodeCrossings;
+        sums.labelOverlaps += q.labelOverlaps;
+        sums.portViolations += q.portViolations;
         const violations =
           q.nodeOverlaps +
           q.groupOverlaps +
@@ -201,6 +245,7 @@ describe('acceptance tests: layout quality and invariants', () => {
           q.portViolations;
         totalViolations += violations;
       }
+      console.log('FUZZED GRAPHS TOTAL VIOLATIONS BREAKDOWN:', sums);
       expect(totalViolations).toBe(0);
     });
   });

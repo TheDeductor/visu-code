@@ -178,9 +178,9 @@ export function layoutQuality(layout: LayoutResult, theme?: Theme): LayoutQualit
     }
   }
 
-  // Edge polyline points & segments
+  // Edge polyline points & segments (support legacy cubic Béziers if path contains 'C')
   const edgeSegments: Array<Array<{ x: number; y: number }>> = graph.edges.map((e) => {
-    if (e.points.length === 4) return sampleEdge(e.points, 20);
+    if (e.points.length === 4 && e.path.includes('C')) return sampleEdge(e.points, 20);
     return e.points;
   });
 

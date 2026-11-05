@@ -162,7 +162,19 @@ secret-like files inventoried without reading values.
 - `src/cli` — thin fast hook entrypoint plus Commander CLI.
 - `src/agent-kit` — guide, rules, hooks, MCP.
 - `viewer` — React + Vite, custom accessible SVG/rough.js canvas.
-- `test` — 52 Vitest unit/integration/fuzz tests.
+- `test` — 66 Vitest unit/integration/fuzz tests + Playwright smoke.
+
+### Layout Engine
+
+VibeMap includes a custom, zero-runtime-dependency compound layout engine in `src/core/layout.ts`:
+- **Compound hierarchical ranking:** Bottom-up sizing collapses groups into super-nodes; inter-group edges become weighted super-edges. Ranks are ordered with 4+ sweeps of barycentric heuristics plus adjacent swap refinement.
+- **Group isolation & zero-overlap:** Group boundaries are computed strictly from member extents plus `groupPad` before placement, ensuring non-overlapping containment by construction.
+- **Long-edge dummy channels:** Edges spanning multiple ranks allocate dummy nodes during layer ordering, preventing edges from cutting through intermediate nodes.
+- **Aspect-ratio folding:** Diagrams that exceed an aspect ratio of 2.2:1 with $\ge 3$ ranks wrap into balanced sub-rows, preserving compact $\le 2:1$ aspect ratios for standard pipelines.
+- **Obstacle-aware orthogonal routing:** Edge paths use distributed ports ($\ge 14\text{ px}$ spacing) and an A* diagram track router to generate rounded-corner ($R=10$) orthogonal polylines that avoid node collisions.
+- **Collision-free translucent labels:** Label placements are tested against nodes, headers, and neighboring labels with progressive fallback and truncation, styled with translucent backgrounds (`fill-opacity="0.88"`) to never obstruct canvas geometry.
+- **ERD & Sequence layouts:** ERD graphs use degree-sorted grid clustering with specific field row PK/FK attachment; sequence diagrams dynamically space participants based on message label widths.
+- **Diagnostics:** Full layout quality metrics (`layoutQuality()`) are accessible via `vibemap inspect <map>`.
 
 Deliberate deviations from the original spec: a native deterministic SVG canvas
 instead of Excalidraw/ELK (the Excalidraw exporter remains), native `http`/`ws`
