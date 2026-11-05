@@ -71,7 +71,7 @@ describe('layout', () => {
       }
       for (const edge of layout.edges) {
         expect(edge.path).toContain('M ');
-        expect(edge.points).toHaveLength(4);
+        expect(edge.points.length).toBeGreaterThanOrEqual(2);
       }
     }
   });

@@ -43,7 +43,12 @@ export function defaultTheme(): Theme {
     font: 'hand',
     roughness: 1,
     strokeWidth: 2,
-    gap: 60,
+    gap: 56,
+    rankSep: 120,
+    nodeSep: 56,
+    groupPad: { x: 36, top: 44, bottom: 28 },
+    groupSep: 40,
+    nodeMargin: 28,
     minNodeSize: { w: 140, h: 56 },
     maxLabelWidth: 220,
     colors: {
@@ -117,7 +122,11 @@ export const DEFAULT_THEME_YAML = `schema: 1
 font: hand          # hand | normal | code
 roughness: 1        # 0 architect, 1 artist, 2 cartoonist
 strokeWidth: 2
-gap: 60
+rankSep: 120
+nodeSep: 56
+groupPad: { x: 36, top: 44, bottom: 28 }
+groupSep: 40
+nodeMargin: 28
 minNodeSize: { w: 140, h: 56 }
 maxLabelWidth: 220
 colors:

@@ -1,10 +1,24 @@
-import type { GraphLayout, LayoutResult, VibeMap } from './types.js';
+import type { GraphLayout, LayoutBox, LayoutResult, Theme, VibeMap } from './types.js';
 import type { Project } from './project.js';
 import { loadMap } from './maps.js';
 import { readLayout } from './project.js';
 import { layoutMap } from './layout.js';
 import { measureText } from './theme.js';
 import { mapFileFromId } from './paths.js';
+import { defaultTheme } from './defaults.js';
+
+export interface LayoutQuality {
+  nodeOverlaps: number;
+  groupOverlaps: number;
+  groupMarginViolations: number;
+  groupContainmentViolations: number;
+  edgeNodeCrossings: number;
+  edgeCrossings: number;
+  labelOverlaps: number;
+  portViolations: number;
+  aspectRatio: number;
+  warnings: string[];
+}
 
 export interface InspectReport {
   id: string;
@@ -22,6 +36,7 @@ export interface InspectReport {
   labelOverflow: number;
   pinned: number;
   warnings: string[];
+  quality: LayoutQuality;
   layout: LayoutResult;
 }
 
@@ -81,56 +96,244 @@ function segmentsIntersect(p1: { x: number; y: number }, q1: { x: number; y: num
   return false;
 }
 
+export function layoutQuality(layout: LayoutResult, theme?: Theme): LayoutQuality {
+  const t = theme ?? defaultTheme();
+  if (layout.type !== 'graph') {
+    return {
+      nodeOverlaps: 0,
+      groupOverlaps: 0,
+      groupMarginViolations: 0,
+      groupContainmentViolations: 0,
+      edgeNodeCrossings: 0,
+      edgeCrossings: 0,
+      labelOverlaps: 0,
+      portViolations: 0,
+      aspectRatio: layout.width / Math.max(1, layout.height),
+      warnings: [],
+    };
+  }
+
+  const graph = layout;
+  const nodeMargin = t.nodeMargin ?? 28;
+  const groupSep = t.groupSep ?? 40;
+
+  // 1. Node overlaps with nodeMargin (excluding pinned-pinned)
+  let nodeOverlaps = 0;
+  for (let i = 0; i < graph.nodes.length; i++) {
+    for (let j = i + 1; j < graph.nodes.length; j++) {
+      const a = graph.nodes[i]!;
+      const b = graph.nodes[j]!;
+      if (a.pinned && b.pinned) continue;
+      const overlapX = a.x < b.x + b.w + nodeMargin - 1e-4 && a.x + a.w + nodeMargin > b.x + 1e-4;
+      const overlapY = a.y < b.y + b.h + nodeMargin - 1e-4 && a.y + a.h + nodeMargin > b.y + 1e-4;
+      if (overlapX && overlapY) nodeOverlaps++;
+    }
+  }
+
+  // 2. Group overlaps & group margin violations
+  let groupOverlaps = 0;
+  let groupMarginViolations = 0;
+  for (let i = 0; i < graph.groups.length; i++) {
+    for (let j = i + 1; j < graph.groups.length; j++) {
+      const g1 = graph.groups[i]!;
+      const g2 = graph.groups[j]!;
+      const overlaps =
+        g1.x < g2.x + g2.w - 1e-4 &&
+        g1.x + g1.w > g2.x + 1e-4 &&
+        g1.y < g2.y + g2.h - 1e-4 &&
+        g1.y + g1.h > g2.y + 1e-4;
+      if (overlaps) {
+        groupOverlaps++;
+        groupMarginViolations++;
+      } else {
+        const dx = Math.max(0, Math.max(g1.x, g2.x) - Math.min(g1.x + g1.w, g2.x + g2.w));
+        const dy = Math.max(0, Math.max(g1.y, g2.y) - Math.min(g1.y + g1.h, g2.y + g2.h));
+        const dist = dx > 0 && dy > 0 ? Math.hypot(dx, dy) : Math.max(dx, dy);
+        if (dist < groupSep - 1e-4) groupMarginViolations++;
+      }
+    }
+  }
+
+  // 3. Group containment: each group rect contains exactly its member nodes and no others
+  let groupContainmentViolations = 0;
+  for (const group of graph.groups) {
+    for (const node of graph.nodes) {
+      if (node.group === group.id) {
+        // Must be inside group
+        const inside =
+          node.x >= group.x - 1e-4 &&
+          node.x + node.w <= group.x + group.w + 1e-4 &&
+          node.y >= group.y - 1e-4 &&
+          node.y + node.h <= group.y + group.h + 1e-4;
+        if (!inside) groupContainmentViolations++;
+      } else {
+        // Non-member: must not overlap group
+        const overlaps =
+          node.x < group.x + group.w - 1e-4 &&
+          node.x + node.w > group.x + 1e-4 &&
+          node.y < group.y + group.h - 1e-4 &&
+          node.y + node.h > group.y + 1e-4;
+        if (overlaps) groupContainmentViolations++;
+      }
+    }
+  }
+
+  // Edge polyline points & segments
+  const edgeSegments: Array<Array<{ x: number; y: number }>> = graph.edges.map((e) => {
+    if (e.points.length === 4) return sampleEdge(e.points, 20);
+    return e.points;
+  });
+
+  // 4. Edge-node crossings: polyline segment crosses non-endpoint node rect (inflated 6px)
+  let edgeNodeCrossings = 0;
+  for (let i = 0; i < graph.edges.length; i++) {
+    const edge = graph.edges[i]!;
+    const pts = edgeSegments[i]!;
+    for (const node of graph.nodes) {
+      if (node.id === edge.from || node.id === edge.to) continue;
+      const inflated = { x: node.x - 6, y: node.y - 6, w: node.w + 12, h: node.h + 12 };
+      let hit = false;
+      for (let k = 0; k < pts.length - 1; k++) {
+        if (segmentIntersectsBox(pts[k]!, pts[k + 1]!, inflated)) {
+          hit = true;
+          break;
+        }
+      }
+      if (hit) edgeNodeCrossings++;
+    }
+  }
+
+  // 5. Edge-edge crossings
+  let edgeCrossings = 0;
+  for (let i = 0; i < graph.edges.length; i++) {
+    const e1 = graph.edges[i]!;
+    const pts1 = edgeSegments[i]!;
+    for (let j = i + 1; j < graph.edges.length; j++) {
+      const e2 = graph.edges[j]!;
+      if (e1.from === e2.from || e1.from === e2.to || e1.to === e2.from || e1.to === e2.to) continue;
+      const pts2 = edgeSegments[j]!;
+      let hit = false;
+      for (let a = 0; a < pts1.length - 1 && !hit; a++) {
+        for (let b = 0; b < pts2.length - 1 && !hit; b++) {
+          if (segmentsIntersect(pts1[a]!, pts1[a + 1]!, pts2[b]!, pts2[b + 1]!)) {
+            hit = true;
+          }
+        }
+      }
+      if (hit) edgeCrossings++;
+    }
+  }
+
+  // 6. Label overlaps: label rect overlaps node, any other label, or group header band (top 44px)
+  let labelOverlaps = 0;
+  const labelBoxes: Array<{ x: number; y: number; w: number; h: number }> = [];
+  for (const edge of graph.edges) {
+    if (!edge.label || !edge.labelLines.length) continue;
+    const lw = Math.max(...edge.labelLines.map((l) => measureText(l, 13)), 0) + 14;
+    const lh = edge.labelLines.length * 17 + 8;
+    labelBoxes.push({
+      x: edge.labelPos.x - lw / 2,
+      y: edge.labelPos.y - lh / 2,
+      w: lw,
+      h: lh,
+    });
+  }
+
+  for (let i = 0; i < labelBoxes.length; i++) {
+    const l1 = labelBoxes[i]!;
+    // Overlaps any node?
+    for (const node of graph.nodes) {
+      if (l1.x < node.x + node.w && l1.x + l1.w > node.x && l1.y < node.y + node.h && l1.y + l1.h > node.y) {
+        labelOverlaps++;
+        break;
+      }
+    }
+    // Overlaps any other label?
+    for (let j = i + 1; j < labelBoxes.length; j++) {
+      const l2 = labelBoxes[j]!;
+      if (l1.x < l2.x + l2.w && l1.x + l1.w > l2.x && l1.y < l2.y + l2.h && l1.y + l1.h > l2.y) {
+        labelOverlaps++;
+      }
+    }
+    // Overlaps any group header band?
+    for (const g of graph.groups) {
+      const header = { x: g.x, y: g.y, w: g.w, h: 44 };
+      if (l1.x < header.x + header.w && l1.x + l1.w > header.x && l1.y < header.y + header.h && l1.y + l1.h > header.y) {
+        labelOverlaps++;
+      }
+    }
+  }
+
+  // 7. Ports: no two edges share an anchor point on the same node side (distance >= 12 px)
+  let portViolations = 0;
+  const nodeById = new Map(graph.nodes.map((n) => [n.id, n]));
+  for (const node of graph.nodes) {
+    type Side = 'left' | 'right' | 'top' | 'bottom';
+    const sidePorts: Record<Side, number[]> = { left: [], right: [], top: [], bottom: [] };
+    for (const edge of graph.edges) {
+      if (edge.from === node.id && edge.points.length > 0) {
+        const pt = edge.points[0]!;
+        const side = detectSide(pt, node);
+        sidePorts[side].push(side === 'left' || side === 'right' ? pt.y : pt.x);
+      }
+      if (edge.to === node.id && edge.points.length > 0) {
+        const pt = edge.points[edge.points.length - 1]!;
+        const side = detectSide(pt, node);
+        sidePorts[side].push(side === 'left' || side === 'right' ? pt.y : pt.x);
+      }
+    }
+    for (const side of ['left', 'right', 'top', 'bottom'] as Side[]) {
+      const coords = sidePorts[side].sort((a, b) => a - b);
+      for (let k = 0; k < coords.length - 1; k++) {
+        if (coords[k + 1]! - coords[k]! < 12 - 1e-4) {
+          portViolations++;
+        }
+      }
+    }
+  }
+
+  return {
+    nodeOverlaps,
+    groupOverlaps,
+    groupMarginViolations,
+    groupContainmentViolations,
+    edgeNodeCrossings,
+    edgeCrossings,
+    labelOverlaps,
+    portViolations,
+    aspectRatio: graph.width / Math.max(1, graph.height),
+    warnings: graph.warnings,
+  };
+}
+
+function detectSide(p: { x: number; y: number }, box: { x: number; y: number; w: number; h: number }): 'left' | 'right' | 'top' | 'bottom' {
+  const dLeft = Math.abs(p.x - box.x);
+  const dRight = Math.abs(p.x - (box.x + box.w));
+  const dTop = Math.abs(p.y - box.y);
+  const dBottom = Math.abs(p.y - (box.y + box.h));
+  const min = Math.min(dLeft, dRight, dTop, dBottom);
+  if (min === dLeft) return 'left';
+  if (min === dRight) return 'right';
+  if (min === dTop) return 'top';
+  return 'bottom';
+}
+
 export function inspectMap(project: Project, id: string): InspectReport {
   const loaded = loadMap(project, id);
   const sidecar = readLayout(project, id);
   const layout = layoutMap(loaded.map, project.theme, { sidecar });
-  let overlaps = 0;
-  let edgeCrossings = 0;
-  let edgeNodeCrossings = 0;
+  const quality = layoutQuality(layout, project.theme);
+  let overlaps = quality.nodeOverlaps;
+  let edgeCrossings = quality.edgeCrossings;
+  let edgeNodeCrossings = quality.edgeNodeCrossings;
   let labelOverflow = 0;
-  const warnings: string[] = [];
+  const warnings: string[] = [...quality.warnings];
   if (layout.type === 'graph') {
     const graph: GraphLayout = layout;
-    for (let i = 0; i < graph.nodes.length; i++) {
-      for (let j = i + 1; j < graph.nodes.length; j++) {
-        const a = graph.nodes[i]!;
-        const b = graph.nodes[j]!;
-        if (a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y) overlaps++;
-      }
-    }
-    const samples = graph.edges.map((edge) => sampleEdge(edge.points));
-    for (let i = 0; i < graph.edges.length; i++) {
-      const edge = graph.edges[i]!;
-      const points = samples[i]!;
-      for (let j = 0; j < graph.nodes.length; j++) {
-        const node = graph.nodes[j]!;
-        if (node.id === edge.from || node.id === edge.to) continue;
-        for (let k = 0; k < points.length - 1; k++) {
-          if (segmentIntersectsBox(points[k]!, points[k + 1]!, node)) {
-            edgeNodeCrossings++;
-            break;
-          }
-        }
-      }
-      for (let j = i + 1; j < graph.edges.length; j++) {
-        const other = graph.edges[j]!;
-        if (other.from === edge.from || other.from === edge.to || other.to === edge.from || other.to === edge.to) continue;
-        const otherPoints = samples[j]!;
-        let hit = false;
-        for (let a = 0; a < points.length - 1 && !hit; a++) {
-          for (let b = 0; b < otherPoints.length - 1 && !hit; b++) {
-            if (segmentsIntersect(points[a]!, points[a + 1]!, otherPoints[b]!, otherPoints[b + 1]!)) hit = true;
-          }
-        }
-        if (hit) edgeCrossings++;
-      }
-    }
     for (const node of graph.nodes) {
       const maxWidth = node.w - 18 * 2;
       if (node.labelLines.some((line) => measureText(line, 16) > maxWidth + 1)) labelOverflow++;
     }
-    warnings.push(...graph.warnings);
   }
   return {
     id,
@@ -148,6 +351,7 @@ export function inspectMap(project: Project, id: string): InspectReport {
     labelOverflow,
     pinned: layout.type === 'graph' ? layout.nodes.filter((n) => n.pinned).length : 0,
     warnings,
+    quality,
     layout,
   };
 }
@@ -165,6 +369,8 @@ export function formatInspect(report: InspectReport): string {
     for (const e of report.layout.entities) lines.push(` ${e.id.padEnd(20)} (${Math.round(e.x)},${Math.round(e.y)})  ${e.fields.length} fields`);
   }
   lines.push(`overlaps: ${report.overlaps}   edge crossings: ${report.edgeCrossings}   edge/node crossings: ${report.edgeNodeCrossings}   label overflow: ${report.labelOverflow}   pinned: ${report.pinned}`);
+  const q = report.quality;
+  lines.push(`quality: nodeOverlaps=${q.nodeOverlaps} groupOverlaps=${q.groupOverlaps} groupMarginViolations=${q.groupMarginViolations} groupContainmentViolations=${q.groupContainmentViolations} edgeNodeCrossings=${q.edgeNodeCrossings} edgeCrossings=${q.edgeCrossings} labelOverlaps=${q.labelOverlaps} portViolations=${q.portViolations} aspect=${q.aspectRatio.toFixed(2)}`);
   lines.push(`canvas: ${Math.round(report.width)}x${Math.round(report.height)}`);
   if (report.warnings.length) lines.push(`warnings: ${report.warnings.join(' | ')}`);
   return lines.join('\n');

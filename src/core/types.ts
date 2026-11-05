@@ -283,7 +283,13 @@ export interface Theme {
   font: 'hand' | 'normal' | 'code';
   roughness: 0 | 1 | 2;
   strokeWidth: number;
+  /** @deprecated Deprecated alias for nodeSep and rankSep / 2. Kept for backward compatibility. */
   gap: number;
+  rankSep: number;
+  nodeSep: number;
+  groupPad: { x: number; top: number; bottom: number };
+  groupSep: number;
+  nodeMargin: number;
   minNodeSize: { w: number; h: number };
   maxLabelWidth: number;
   colors: {

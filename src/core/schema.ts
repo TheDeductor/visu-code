@@ -279,13 +279,26 @@ export const ConfigSchema = z
   })
   .strict();
 
+export const GroupPadSchema = z
+  .object({
+    x: z.number().min(0).max(200).default(36),
+    top: z.number().min(0).max(200).default(44),
+    bottom: z.number().min(0).max(200).default(28),
+  })
+  .strict();
+
 export const ThemeSchema = z
   .object({
     schema: SCHEMA_LITERAL,
     font: z.enum(['hand', 'normal', 'code']).default('hand'),
     roughness: z.union([z.literal(0), z.literal(1), z.literal(2)]).default(1),
     strokeWidth: z.number().min(1).max(6).default(2),
-    gap: z.number().min(20).max(200).default(60),
+    gap: z.number().min(20).max(200).optional(),
+    rankSep: z.number().min(20).max(400).optional(),
+    nodeSep: z.number().min(10).max(300).optional(),
+    groupPad: GroupPadSchema.default({ x: 36, top: 44, bottom: 28 }),
+    groupSep: z.number().min(0).max(300).default(40),
+    nodeMargin: z.number().min(0).max(200).default(28),
     minNodeSize: z
       .object({ w: z.number().min(80).max(400).default(140), h: z.number().min(30).max(200).default(56) })
       .strict()
@@ -308,7 +321,19 @@ export const ThemeSchema = z
       .strict()
       .default(defaultTheme().colors),
   })
-  .strict();
+  .strict()
+  .transform((val) => {
+    const hasGap = val.gap !== undefined;
+    const nodeSep = val.nodeSep ?? (hasGap ? val.gap! : 56);
+    const rankSep = val.rankSep ?? (hasGap ? val.gap! * 2 : 120);
+    const gap = val.gap ?? nodeSep;
+    return {
+      ...val,
+      gap,
+      nodeSep,
+      rankSep,
+    };
+  });
 
 export const PhaseSchema = z
   .object({
