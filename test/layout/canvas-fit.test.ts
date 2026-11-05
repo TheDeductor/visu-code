@@ -51,3 +51,4 @@ describe('Playwright canvas fit & zoom test', () => {
     await page.screenshot({ path: '.tmp/agent-workflow.png' });
   });
 });
+
