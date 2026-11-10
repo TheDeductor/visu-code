@@ -5,23 +5,23 @@ Layout engine: **legacy** (`src/core/layout.ts`).
 
 ## D:\visu-code
 
-| map | type | nodes | edges | groups | nodeOverlaps | groupOverlaps | groupMarginViolations | groupContainmentViolations | edgeNodeCrossings | edgeCrossings | labelOverlaps | portViolations | maxNodeDegree | aspect | bends | pinned | canvas |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| 00-overview | graph | 14 | 16 | 5 | 0 | 0 | 0 | 0 | 0 | 28 | 0 | 0 | 7 | 1.39 | 38 | 5 | 1780x1278 |
-| agent-workflow | graph | 10 | 12 | 3 | 0 | 0 | 0 | 0 | 0 | 2 | 0 | 0 | 6 | 1.21 | 46 | 2 | 1114x922 |
-| diagram-pipeline | graph | 11 | 13 | 4 | 0 | 0 | 0 | 0 | 0 | 10 | 0 | 0 | 5 | 1.07 | 35 | 5 | 959x894 |
-| drift-detection | graph | 10 | 9 | 3 | 0 | 0 | 0 | 0 | 0 | 1 | 0 | 0 | 4 | 1.99 | 25 | 0 | 1273x640 |
-| frontend-ui | graph | 10 | 11 | 4 | 0 | 0 | 0 | 0 | 0 | 2 | 0 | 0 | 8 | 1.19 | 34 | 3 | 1174x986 |
-| init-flow | sequence | 8 | 24 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 1.65 | 0 | 0 | 2664x1610 |
-| user-flow | graph | 8 | 7 | 0 | 0 | 0 | 0 | 0 | 0 | 1 | 0 | 0 | 3 | 3.06 | 14 | 0 | 1132x370 |
-| user-journey | graph | 10 | 10 | 3 | 0 | 0 | 0 | 0 | 0 | 2 | 0 | 0 | 3 | 0.66 | 32 | 0 | 842x1268 |
+| map | type | nodes | edges | groups | nodeOverlaps | groupOverlaps | groupMarginViolations | groupContainmentViolations | edgeNodeCrossings | edgeCrossings | edgeGroupCrossings | groupLabelOverlaps | labelOverlaps | portViolations | maxNodeDegree | aspect | bends | pinned | canvas |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 00-overview | graph | 14 | 16 | 5 | 0 | 0 | 0 | 0 | 0 | 28 | 1 | 0 | 0 | 0 | 7 | 1.39 | 38 | 5 | 1780x1278 |
+| agent-workflow | graph | 10 | 12 | 3 | 0 | 0 | 0 | 0 | 0 | 2 | 2 | 1 | 0 | 0 | 6 | 1.21 | 46 | 2 | 1114x922 |
+| diagram-pipeline | graph | 11 | 13 | 4 | 0 | 0 | 0 | 0 | 0 | 10 | 0 | 1 | 0 | 0 | 5 | 1.07 | 35 | 5 | 959x894 |
+| drift-detection | graph | 10 | 9 | 3 | 0 | 0 | 0 | 0 | 0 | 1 | 0 | 0 | 0 | 0 | 4 | 1.99 | 25 | 0 | 1273x640 |
+| frontend-ui | graph | 10 | 11 | 4 | 0 | 0 | 0 | 0 | 0 | 2 | 0 | 1 | 0 | 0 | 8 | 1.19 | 34 | 3 | 1174x986 |
+| init-flow | sequence | 8 | 24 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 1.65 | 0 | 0 | 2664x1610 |
+| user-flow | graph | 8 | 7 | 0 | 0 | 0 | 0 | 0 | 0 | 1 | 0 | 0 | 0 | 0 | 3 | 3.06 | 14 | 0 | 1132x370 |
+| user-journey | graph | 10 | 10 | 3 | 0 | 0 | 0 | 0 | 0 | 2 | 0 | 2 | 0 | 0 | 3 | 0.66 | 32 | 0 | 842x1268 |
 
 ## D:\visu-code\fixtures\ts-web
 
-| map | type | nodes | edges | groups | nodeOverlaps | groupOverlaps | groupMarginViolations | groupContainmentViolations | edgeNodeCrossings | edgeCrossings | labelOverlaps | portViolations | maxNodeDegree | aspect | bends | pinned | canvas |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| 00-overview | graph | 4 | 3 | 3 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 2 | 2.28 | 6 | 0 | 834x366 |
-| auth/login-flow | graph | 5 | 5 | 2 | 0 | 0 | 0 | 0 | 0 | 1 | 0 | 0 | 4 | 2.08 | 12 | 0 | 878x422 |
+| map | type | nodes | edges | groups | nodeOverlaps | groupOverlaps | groupMarginViolations | groupContainmentViolations | edgeNodeCrossings | edgeCrossings | edgeGroupCrossings | groupLabelOverlaps | labelOverlaps | portViolations | maxNodeDegree | aspect | bends | pinned | canvas |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 00-overview | graph | 4 | 3 | 3 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 2 | 2.28 | 6 | 0 | 834x366 |
+| auth/login-flow | graph | 5 | 5 | 2 | 0 | 0 | 0 | 0 | 0 | 1 | 0 | 0 | 0 | 0 | 4 | 2.08 | 12 | 0 | 878x422 |
 
 Maps measured: 10
 

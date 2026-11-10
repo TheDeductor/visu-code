@@ -133,10 +133,48 @@ describe('layoutQuality', () => {
     expect(Number.isFinite(q.edgeCrossings)).toBe(true);
   });
 
+  it('counts an edge that crosses a foreign group while both endpoints are outside it', () => {
+    const layout = graph({
+      nodes: [
+        node('a', 0, 300, 40, 20),
+        node('b', 400, 300, 40, 20),
+        node('member', 20, 60, 60, 40, { group: 'g1' }),
+      ],
+      groups: [{ id: 'g1', label: 'Group A', x: 0, y: 0, w: 300, h: 200 }],
+      edges: [
+        edge('through', 'a', 'b', [{ x: 20, y: 300 }, { x: 20, y: 100 }]),
+        edge('boundary', 'member', 'b', [{ x: 80, y: 80 }, { x: 400, y: 300 }]),
+      ],
+    });
+    expect(layoutQuality(layout, theme).edgeGroupCrossings).toBe(1);
+  });
+
+  it('counts group label overlaps with an edge and with an edge label', () => {
+    const layout = graph({
+      nodes: [
+        node('a', 0, 300, 40, 20),
+        node('b', 400, 300, 40, 20),
+        node('c', 500, 500, 40, 20),
+        node('d', 600, 600, 40, 20),
+      ],
+      groups: [{ id: 'g1', label: 'Group A', x: 0, y: 0, w: 300, h: 200 }],
+      edges: [
+        edge('path-through-label', 'a', 'b', [{ x: 0, y: 10 }, { x: 300, y: 10 }]),
+        edge('label-over-label', 'c', 'd', [{ x: 500, y: 500 }, { x: 600, y: 600 }], {
+          label: 'x',
+          labelPos: { x: 30, y: 15 },
+        }),
+      ],
+    });
+    expect(layoutQuality(layout, theme).groupLabelOverlaps).toBe(2);
+  });
+
   it('returns zeros and an aspect ratio for non-graph layouts', () => {
     const layout: SequenceLayout = { type: 'sequence', width: 200, height: 100, participants: [], steps: [], fragments: [] };
     const q: ReturnType<typeof layoutQuality> = layoutQuality(layout as LayoutResult, theme);
     expect(q.nodeOverlaps).toBe(0);
+    expect(q.edgeGroupCrossings).toBe(0);
+    expect(q.groupLabelOverlaps).toBe(0);
     expect(q.maxNodeDegree).toBe(0);
     expect(q.bends).toBe(0);
     expect(q.aspectRatio).toBe(2);

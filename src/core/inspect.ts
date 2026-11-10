@@ -83,7 +83,7 @@ export function formatInspect(report: InspectReport): string {
   }
   lines.push(`overlaps: ${report.overlaps}   edge crossings: ${report.edgeCrossings}   edge/node crossings: ${report.edgeNodeCrossings}   label overflow: ${report.labelOverflow}   pinned: ${report.pinned}`);
   const q = report.quality;
-  lines.push(`quality: nodeOverlaps=${q.nodeOverlaps} groupOverlaps=${q.groupOverlaps} groupMarginViolations=${q.groupMarginViolations} groupContainmentViolations=${q.groupContainmentViolations} edgeNodeCrossings=${q.edgeNodeCrossings} edgeCrossings=${q.edgeCrossings} labelOverlaps=${q.labelOverlaps} portViolations=${q.portViolations} maxNodeDegree=${q.maxNodeDegree} aspect=${q.aspectRatio.toFixed(2)} bends=${q.bends}`);
+  lines.push(`quality: nodeOverlaps=${q.nodeOverlaps} groupOverlaps=${q.groupOverlaps} groupMarginViolations=${q.groupMarginViolations} groupContainmentViolations=${q.groupContainmentViolations} edgeNodeCrossings=${q.edgeNodeCrossings} edgeCrossings=${q.edgeCrossings} edgeGroupCrossings=${q.edgeGroupCrossings} groupLabelOverlaps=${q.groupLabelOverlaps} labelOverlaps=${q.labelOverlaps} portViolations=${q.portViolations} maxNodeDegree=${q.maxNodeDegree} aspect=${q.aspectRatio.toFixed(2)} bends=${q.bends}`);
   lines.push(`canvas: ${Math.round(report.width)}x${Math.round(report.height)}`);
   if (report.warnings.length) lines.push(`warnings: ${report.warnings.join(' | ')}`);
   return lines.join('\n');

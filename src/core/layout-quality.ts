@@ -9,6 +9,8 @@ export interface LayoutQualityMetrics {
   groupContainmentViolations: number;
   edgeNodeCrossings: number;
   edgeCrossings: number;
+  edgeGroupCrossings: number;
+  groupLabelOverlaps: number;
   labelOverlaps: number;
   portViolations: number;
   maxNodeDegree: number;
@@ -109,6 +111,8 @@ export function layoutQuality(layout: LayoutResult, theme?: Theme): LayoutQualit
       groupContainmentViolations: 0,
       edgeNodeCrossings: 0,
       edgeCrossings: 0,
+      edgeGroupCrossings: 0,
+      groupLabelOverlaps: 0,
       labelOverlaps: 0,
       portViolations: 0,
       maxNodeDegree: 0,
@@ -227,7 +231,38 @@ export function layoutQuality(layout: LayoutResult, theme?: Theme): LayoutQualit
     }
   }
 
-  // 6. Label overlaps: label rect overlaps node, any other label, or group header band (top 44px)
+  // 6. Edge-group crossings: the edge crosses a group border while neither
+  //    endpoint is inside that group. Edges that connect a group to the
+  //    outside are legitimate and are not counted.
+  let edgeGroupCrossings = 0;
+  const nodeById = new Map(graph.nodes.map((n) => [n.id, n] as const));
+  const insideGroup = (
+    nodeId: string,
+    g: { x: number; y: number; w: number; h: number },
+  ): boolean => {
+    const n = nodeById.get(nodeId);
+    if (!n) return false;
+    return (
+      n.x >= g.x - 1e-4 &&
+      n.x + n.w <= g.x + g.w + 1e-4 &&
+      n.y >= g.y - 1e-4 &&
+      n.y + n.h <= g.y + g.h + 1e-4
+    );
+  };
+  for (let i = 0; i < graph.edges.length; i++) {
+    const edge = graph.edges[i]!;
+    const pts = edgeSegments[i]!;
+    for (const g of graph.groups) {
+      if (insideGroup(edge.from, g) || insideGroup(edge.to, g)) continue;
+      let hit = false;
+      for (let k = 0; k < pts.length - 1 && !hit; k++) {
+        if (segmentIntersectsBox(pts[k]!, pts[k + 1]!, g)) hit = true;
+      }
+      if (hit) edgeGroupCrossings++;
+    }
+  }
+
+  // 7. Label overlaps: label rect overlaps node, any other label, or group header band (top 44px)
   let labelOverlaps = 0;
   const labelBoxes: Array<{ x: number; y: number; w: number; h: number }> = [];
   for (const edge of graph.edges) {
@@ -264,7 +299,42 @@ export function layoutQuality(layout: LayoutResult, theme?: Theme): LayoutQualit
     }
   }
 
-  // 7. Ports: no two edges share an anchor point on the same node side (distance >= 12 px)
+  // 8. Group label overlaps: the group label rect against edge segments and
+  //    edge labels. Matches the viewer label position (x+14, y+23 baseline).
+  const GROUP_LABEL_PAD_X = 14;
+  const GROUP_LABEL_PAD_Y = 8;
+  const GROUP_LABEL_HEIGHT = 18;
+  let groupLabelOverlaps = 0;
+  const groupLabelBoxes = graph.groups.map((g) => ({
+    x: g.x + GROUP_LABEL_PAD_X,
+    y: g.y + GROUP_LABEL_PAD_Y,
+    w: measureText(g.label, 13),
+    h: GROUP_LABEL_HEIGHT,
+  }));
+  for (let i = 0; i < graph.edges.length; i++) {
+    const pts = edgeSegments[i]!;
+    for (const box of groupLabelBoxes) {
+      let hit = false;
+      for (let k = 0; k < pts.length - 1 && !hit; k++) {
+        if (segmentIntersectsBox(pts[k]!, pts[k + 1]!, box)) hit = true;
+      }
+      if (hit) groupLabelOverlaps++;
+    }
+  }
+  for (const label of labelBoxes) {
+    for (const box of groupLabelBoxes) {
+      if (
+        label.x < box.x + box.w &&
+        label.x + label.w > box.x &&
+        label.y < box.y + box.h &&
+        label.y + label.h > box.y
+      ) {
+        groupLabelOverlaps++;
+      }
+    }
+  }
+
+  // 9. Ports: no two edges share an anchor point on the same node side (distance >= 12 px)
   let portViolations = 0;
   for (const node of graph.nodes) {
     type Side = 'left' | 'right' | 'top' | 'bottom';
@@ -291,7 +361,7 @@ export function layoutQuality(layout: LayoutResult, theme?: Theme): LayoutQualit
     }
   }
 
-  // 8. Degree: incident edge count per node (self-loops count twice)
+  // 10. Degree: incident edge count per node (self-loops count twice)
   const degree = new Map<string, number>();
   for (const edge of graph.edges) {
     degree.set(edge.from, (degree.get(edge.from) ?? 0) + 1);
@@ -302,7 +372,7 @@ export function layoutQuality(layout: LayoutResult, theme?: Theme): LayoutQualit
     maxNodeDegree = Math.max(maxNodeDegree, degree.get(node.id) ?? 0);
   }
 
-  // 9. Bends: a cubic Bézier counts once; a polyline counts interior vertices.
+  // 11. Bends: a cubic Bézier counts once; a polyline counts interior vertices.
   let bends = 0;
   for (const edge of graph.edges) {
     bends += edge.path.includes('C') ? 1 : Math.max(0, edge.points.length - 2);
@@ -315,6 +385,8 @@ export function layoutQuality(layout: LayoutResult, theme?: Theme): LayoutQualit
     groupContainmentViolations,
     edgeNodeCrossings,
     edgeCrossings,
+    edgeGroupCrossings,
+    groupLabelOverlaps,
     labelOverlaps,
     portViolations,
     maxNodeDegree,
