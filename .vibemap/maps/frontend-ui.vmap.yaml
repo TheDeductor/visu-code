@@ -1,0 +1,59 @@
+schema: 1
+title: Frontend viewer shell
+level: feature
+direction: right
+summary: How the React shell, SVG canvas and typed API client connect.
+type: graph
+groups:
+  - { id: shell, label: React shell, kind: layer }
+  - { id: client, label: Client runtime, kind: layer }
+nodes:
+  - id: app-shell
+    label: App shell
+    kind: ui
+    group: shell
+    description: Root component; owns viewer state and passes callbacks to every child.
+    refs:
+      - path: viewer/src/App.tsx
+        symbol: App
+  - id: top-bar
+    label: Top bar
+    kind: component
+    group: shell
+    description: Tabs, mode switch, search, export menu and validation pill.
+    refs:
+      - path: viewer/src/components/TopBar.tsx
+  - id: sidebar
+    label: Map sidebar
+    kind: component
+    group: shell
+    description: Map tree with filter, drift badges and coverage footer.
+    refs:
+      - path: viewer/src/components/Sidebar.tsx
+  - id: inspector
+    label: Node inspector
+    kind: component
+    group: shell
+    description: Detail, refs, evidence and lock controls for the selected node.
+    refs:
+      - path: viewer/src/components/Inspector.tsx
+  - id: map-canvas
+    label: SVG canvas
+    kind: component
+    group: client
+    description: rough.js SVG scene; pan, zoom, drag, connect and diff overlays.
+    refs:
+      - path: viewer/src/canvas/MapCanvas.tsx
+  - id: api-client
+    label: API + WebSocket client
+    kind: module
+    group: client
+    description: Typed fetch wrapper and live event socket for every /api route.
+    refs:
+      - path: viewer/src/api.ts
+edges:
+  - { from: app-shell, to: top-bar, kind: data }
+  - { from: app-shell, to: sidebar, kind: data }
+  - { from: app-shell, to: inspector, kind: data }
+  - { from: app-shell, to: map-canvas, label: layout + events, kind: data }
+  - { from: app-shell, to: api-client, label: REST + WS, kind: calls }
