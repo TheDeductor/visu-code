@@ -1,0 +1,103 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`managed rule blocks > writes a managed block for aider 1`] = `
+"<!-- vibemap:start -->
+## VibeMap (visual project memory)
+Read \`.vibemap/AGENT_GUIDE.md\` once per session.
+- Before editing: \`vibemap context --area <path>\`.
+- After editing: \`vibemap patch\`, \`vibemap check\`, \`vibemap change add\`.
+- Steps over time → \`sequence\`; components → a small graph.
+- Limits: overview ≤ 9 nodes, feature ≤ 10, ≤ 4 groups, edges ≤ 1.5×nodes.
+- Treat W120–W127 as errors. Never edit layouts/, locks, config or theme.
+- Tracking: **every-change**, granularity **feature**. Update maps after every meaningful change.
+<!-- vibemap:end -->
+"
+`;
+
+exports[`managed rule blocks > writes a managed block for claude-code 1`] = `
+"<!-- vibemap:start -->
+## VibeMap (visual project memory)
+Read \`.vibemap/AGENT_GUIDE.md\` once per session.
+- Before editing: \`vibemap context --area <path>\`.
+- After editing: \`vibemap patch\`, \`vibemap check\`, \`vibemap change add\`.
+- Steps over time → \`sequence\`; components → a small graph.
+- Limits: overview ≤ 9 nodes, feature ≤ 10, ≤ 4 groups, edges ≤ 1.5×nodes.
+- Treat W120–W127 as errors. Never edit layouts/, locks, config or theme.
+- Tracking: **every-change**, granularity **feature**. Update maps after every meaningful change.
+<!-- vibemap:end -->
+"
+`;
+
+exports[`managed rule blocks > writes a managed block for codex 1`] = `
+"<!-- vibemap:start -->
+## VibeMap (visual project memory)
+Read \`.vibemap/AGENT_GUIDE.md\` once per session.
+- Before editing: \`vibemap context --area <path>\`.
+- After editing: \`vibemap patch\`, \`vibemap check\`, \`vibemap change add\`.
+- Steps over time → \`sequence\`; components → a small graph.
+- Limits: overview ≤ 9 nodes, feature ≤ 10, ≤ 4 groups, edges ≤ 1.5×nodes.
+- Treat W120–W127 as errors. Never edit layouts/, locks, config or theme.
+- Tracking: **every-change**, granularity **feature**. Update maps after every meaningful change.
+<!-- vibemap:end -->
+"
+`;
+
+exports[`managed rule blocks > writes a managed block for copilot 1`] = `
+"<!-- vibemap:start -->
+## VibeMap (visual project memory)
+Read \`.vibemap/AGENT_GUIDE.md\` once per session.
+- Before editing: \`vibemap context --area <path>\`.
+- After editing: \`vibemap patch\`, \`vibemap check\`, \`vibemap change add\`.
+- Steps over time → \`sequence\`; components → a small graph.
+- Limits: overview ≤ 9 nodes, feature ≤ 10, ≤ 4 groups, edges ≤ 1.5×nodes.
+- Treat W120–W127 as errors. Never edit layouts/, locks, config or theme.
+- Tracking: **every-change**, granularity **feature**. Update maps after every meaningful change.
+<!-- vibemap:end -->
+"
+`;
+
+exports[`managed rule blocks > writes a managed block for cursor 1`] = `
+"---
+description: VibeMap visual project memory
+alwaysApply: true
+---
+
+<!-- vibemap:start -->
+## VibeMap (visual project memory)
+Read \`.vibemap/AGENT_GUIDE.md\` once per session.
+- Before editing: \`vibemap context --area <path>\`.
+- After editing: \`vibemap patch\`, \`vibemap check\`, \`vibemap change add\`.
+- Steps over time → \`sequence\`; components → a small graph.
+- Limits: overview ≤ 9 nodes, feature ≤ 10, ≤ 4 groups, edges ≤ 1.5×nodes.
+- Treat W120–W127 as errors. Never edit layouts/, locks, config or theme.
+- Tracking: **every-change**, granularity **feature**. Update maps after every meaningful change.
+<!-- vibemap:end -->"
+`;
+
+exports[`managed rule blocks > writes a managed block for gemini 1`] = `
+"<!-- vibemap:start -->
+## VibeMap (visual project memory)
+Read \`.vibemap/AGENT_GUIDE.md\` once per session.
+- Before editing: \`vibemap context --area <path>\`.
+- After editing: \`vibemap patch\`, \`vibemap check\`, \`vibemap change add\`.
+- Steps over time → \`sequence\`; components → a small graph.
+- Limits: overview ≤ 9 nodes, feature ≤ 10, ≤ 4 groups, edges ≤ 1.5×nodes.
+- Treat W120–W127 as errors. Never edit layouts/, locks, config or theme.
+- Tracking: **every-change**, granularity **feature**. Update maps after every meaningful change.
+<!-- vibemap:end -->
+"
+`;
+
+exports[`managed rule blocks > writes a managed block for windsurf 1`] = `
+"<!-- vibemap:start -->
+## VibeMap (visual project memory)
+Read \`.vibemap/AGENT_GUIDE.md\` once per session.
+- Before editing: \`vibemap context --area <path>\`.
+- After editing: \`vibemap patch\`, \`vibemap check\`, \`vibemap change add\`.
+- Steps over time → \`sequence\`; components → a small graph.
+- Limits: overview ≤ 9 nodes, feature ≤ 10, ≤ 4 groups, edges ≤ 1.5×nodes.
+- Treat W120–W127 as errors. Never edit layouts/, locks, config or theme.
+- Tracking: **every-change**, granularity **feature**. Update maps after every meaningful change.
+<!-- vibemap:end -->
+"
+`;

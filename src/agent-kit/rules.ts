@@ -30,19 +30,19 @@ export function modeText(mode: ProjectConfig['tracking']['mode']): string {
 }
 
 export function managedBlock(config: ProjectConfig): string {
+  const overview = config.limits.nodeCaps.overview.soft;
+  const feature = config.limits.nodeCaps.feature.soft;
+  const groups = config.limits.maxGroups;
+  const ratio = config.limits.warnEdgeRatio;
   return `${MANAGED_START}
 ## VibeMap (visual project memory)
-
-This project keeps diagrams and notes in \`.vibemap/\`. Read \`.vibemap/AGENT_GUIDE.md\` once per session.
-
-- Before changing code in an area: run \`vibemap context --area <path-or-feature>\`.
-- After changing code: update affected maps with \`vibemap patch\`, run \`vibemap check\`, then \`vibemap change add\`.
-- Tracking mode: **${config.tracking.mode}**. Granularity: **${config.tracking.granularity}**.
-- Never edit \`.vibemap/layouts/\`, \`config.yaml\`, \`theme.yaml\` or \`locks.json\`.
-- Never change or delete a locked node. Propose the change to the user instead.
-- Do not invent components: every real node points at code with \`refs\`.
-
-${modeText(config.tracking.mode)}
+Read \`.vibemap/AGENT_GUIDE.md\` once per session.
+- Before editing: \`vibemap context --area <path>\`.
+- After editing: \`vibemap patch\`, \`vibemap check\`, \`vibemap change add\`.
+- Steps over time → \`sequence\`; components → a small graph.
+- Limits: overview ≤ ${overview} nodes, feature ≤ ${feature}, ≤ ${groups} groups, edges ≤ ${ratio}×nodes.
+- Treat W120–W127 as errors. Never edit layouts/, locks, config or theme.
+- Tracking: **${config.tracking.mode}**, granularity **${config.tracking.granularity}**. ${modeText(config.tracking.mode)}
 ${MANAGED_END}`;
 }
 
