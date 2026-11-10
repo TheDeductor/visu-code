@@ -10,6 +10,7 @@ import type {
 } from './types.js';
 import { fillForKind, labelFontSize, measureText, shapeForKind, wrapText } from './theme.js';
 import { layoutMap } from './layout.js';
+import { layoutEdgePath } from './geometry.js';
 
 export type ExportFormat = 'svg' | 'png' | 'excalidraw' | 'mermaid' | 'md';
 
@@ -26,6 +27,13 @@ function fontFamily(theme: Theme): string {
 function svgTextLines(lines: string[], cx: number, cy: number, lineHeight: number, fill = '#1e1e1e', weight = 500): string {
   const start = cy - ((lines.length - 1) * lineHeight) / 2;
   return `<text x="${cx}" y="${start}" text-anchor="middle" dominant-baseline="middle" fill="${fill}" font-size="${lineHeight < 20 ? 13 : 16}" font-weight="${weight}">${lines
+    .map((line, i) => `<tspan x="${cx}" dy="${i === 0 ? 0 : lineHeight}">${esc(line)}</tspan>`)
+    .join('')}</text>`;
+}
+
+function svgHaloText(lines: string[], cx: number, cy: number, lineHeight: number, fill: string, halo: string, weight = 500): string {
+  const start = cy - ((lines.length - 1) * lineHeight) / 2;
+  return `<text x="${cx}" y="${start}" text-anchor="middle" dominant-baseline="middle" fill="${fill}" font-size="${lineHeight < 20 ? 13 : 16}" font-weight="${weight}" stroke="${halo}" stroke-width="4" paint-order="stroke" stroke-linejoin="round">${lines
     .map((line, i) => `<tspan x="${cx}" dy="${i === 0 ? 0 : lineHeight}">${esc(line)}</tspan>`)
     .join('')}</text>`;
 }
@@ -50,12 +58,10 @@ function nodePath(shape: string, box: LayoutBox): string {
 
 function edgeSvg(edge: LayoutEdge, theme: Theme): string {
   const mid = edge.labelPos;
-  const labelWidth = Math.max(...edge.labelLines.map((l) => measureText(l, 13)), 0) + 12;
-  const labelHeight = edge.labelLines.length * 17 + 6;
   const label = edge.label && edge.labelLines.length
-    ? `<g><title>${esc(edge.label)}</title><rect x="${mid.x - labelWidth / 2}" y="${mid.y - labelHeight / 2}" width="${labelWidth}" height="${labelHeight}" rx="4" fill="#ffffff" fill-opacity="0.88" stroke="#dee2e6" stroke-width="1"/>${svgTextLines(edge.labelLines, mid.x, mid.y, 17, '#495057')}</g>`
+    ? `<g><title>${esc(edge.label)}</title>${svgHaloText(edge.labelLines, mid.x, mid.y, 17, '#495057', theme.colors.background)}</g>`
     : '';
-  return `<g class="edge"><path d="${edge.path}" fill="none" stroke="#495057" stroke-width="${theme.strokeWidth}" marker-end="url(#arrow)"/>${label}</g>`;
+  return `<g class="edge"><path d="${layoutEdgePath(edge, 10)}" fill="none" stroke="#495057" stroke-width="${theme.strokeWidth}" marker-end="url(#arrow)"/>${label}</g>`;
 }
 
 export function renderSvg(map: VibeMap, theme: Theme, layout: LayoutResult, evidence?: EvidenceMap, sidecar?: MapLayoutSidecar | null): string {
@@ -114,8 +120,7 @@ export function renderSvg(map: VibeMap, theme: Theme, layout: LayoutResult, evid
       const x1 = from.x + from.w / 2;
       const x2 = to.x + to.w / 2;
       parts.push(`<path d="M ${x1} ${step.y} L ${x2} ${step.y}" fill="none" stroke="#343a40" stroke-width="1.8" marker-end="url(#arrow)"/>`);
-      parts.push(`<rect x="${Math.min(x1, x2) + Math.abs(x2 - x1) / 2 - Math.min(180, measureText(step.label, 12) / 2 + 8)}" y="${step.y - 24}" width="${Math.min(360, measureText(step.label, 12) + 16)}" height="20" rx="4" fill="#ffffff"/>`);
-      parts.push(`<text x="${(x1 + x2) / 2}" y="${step.y - 10}" text-anchor="middle" font-size="12" fill="#343a40">${esc(step.label)}</text>`);
+      parts.push(`<text x="${(x1 + x2) / 2}" y="${step.y - 10}" text-anchor="middle" font-size="12" fill="#343a40" stroke="${theme.colors.background}" stroke-width="4" paint-order="stroke" stroke-linejoin="round">${esc(step.label)}</text>`);
     }
   } else if (layout.type === 'erd') {
     for (const relation of layout.relations) parts.push(edgeSvg(relation, theme));
@@ -293,7 +298,8 @@ export function renderExcalidraw(map: VibeMap, theme: Theme, layout: LayoutResul
       const el = base(`vm-${map.title}-g-${group.id}`, 'rectangle', group.x, group.y, group.w, group.h);
       el.backgroundColor = '#f1f3f5';
       el.strokeStyle = 'dashed';
-      el.opacity = 60;
+      el.strokeWidth = 1.5;
+      el.opacity = 30;
       el.customData = { vm: { kind: 'group', id: group.id } };
       elements.push(el);
       elements.push(textElement(`vm-${map.title}-gl-${group.id}`, group.label, group.x + 12, group.y + 8, 16, theme));

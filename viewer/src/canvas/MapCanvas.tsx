@@ -11,7 +11,8 @@ import type {
   VibeAnnotation,
   VibeMap,
 } from '@core/types';
-import { contrastInk, fillForKind, kindLabel, labelFontSize, shapeForKind, wrapText, measureText } from '@core/theme';
+import { contrastInk, fillForKind, kindLabel, labelFontSize, shapeForKind, wrapText } from '@core/theme';
+import { layoutEdgePath } from '@core/geometry';
 import type { MapDetail } from '../api';
 
 interface DragNode {
@@ -146,25 +147,24 @@ function evidenceStyle(status: string | undefined, kind: string, planned: boolea
 }
 
 function EdgeView({ edge, theme, dimmed, markerId }: { edge: LayoutEdge; theme: Theme; dimmed: boolean; markerId: string }) {
-  const labelWidth = edge.label ? Math.max(...edge.labelLines.map((line) => measureText(line, 13)), 0) + 14 : 0;
-  const labelHeight = edge.labelLines.length * 17 + 8;
   return (
     <g opacity={dimmed ? 0.18 : 1} className="edge">
-      <path d={edge.path} fill="none" stroke="#495057" strokeWidth={theme.strokeWidth} markerEnd={`url(#${markerId})`} />
+      <path d={layoutEdgePath(edge, 10)} fill="none" stroke="#495057" strokeWidth={theme.strokeWidth} markerEnd={`url(#${markerId})`} />
       {edge.label && edge.labelLines.length ? (
         <g>
           <title>{edge.label}</title>
-          <rect
-            x={edge.labelPos.x - labelWidth / 2}
-            y={edge.labelPos.y - labelHeight / 2}
-            width={labelWidth}
-            height={labelHeight}
-            rx={5}
-            fill="var(--canvas-bg, #fff)"
-            stroke="var(--line, #dee2e6)"
-            fillOpacity={0.88}
-          />
-          <text x={edge.labelPos.x} y={edge.labelPos.y - (edge.labelLines.length - 1) * 8.5} textAnchor="middle" dominantBaseline="middle" fontSize={12.5} fill="#495057">
+          <text
+            x={edge.labelPos.x}
+            y={edge.labelPos.y - (edge.labelLines.length - 1) * 8.5}
+            textAnchor="middle"
+            dominantBaseline="middle"
+            fontSize={12.5}
+            fill="#495057"
+            stroke="var(--canvas-bg, #fff)"
+            strokeWidth={4}
+            paintOrder="stroke"
+            strokeLinejoin="round"
+          >
             {edge.labelLines.map((line, index) => (
               <tspan key={index} x={edge.labelPos.x} dy={index === 0 ? 0 : 17}>
                 {line}
@@ -471,7 +471,7 @@ export function MapCanvas(props: CanvasProps): React.ReactElement {
           {graph
             ? graph.groups.map((group) => (
                 <g key={group.id} className="vm-group">
-                  {roughPaths({ id: group.id, x: group.x, y: group.y, w: group.w, h: group.h, labelLines: [group.label], kind: 'group' }, 'rect', 'rgba(233,236,239,0.35)', '#adb5bd', { ...theme, roughness: 0 }, `group-${group.id}`, '6 5')}
+                  {roughPaths({ id: group.id, x: group.x, y: group.y, w: group.w, h: group.h, labelLines: [group.label], kind: 'group' }, 'rect', 'rgba(233,236,239,0.12)', '#adb5bd', { ...theme, roughness: 0, strokeWidth: 1.5 }, `group-${group.id}`, '6 5')}
                   <text x={group.x + 14} y={group.y + 23} fontSize={13} fontWeight={700} fill="#495057">
                     {group.label}
                   </text>
@@ -682,7 +682,6 @@ function SequenceScene({ layout, theme, markerId, dimmed }: { layout: SequenceLa
         if (!from || !to) return null;
         const x1 = from.x + from.w / 2;
         const x2 = to.x + to.w / 2;
-        const labelWidth = Math.min(380, step.label.length * 7 + 22);
         return (
           <g key={step.index}>
             {step.from === step.to ? (
@@ -690,8 +689,17 @@ function SequenceScene({ layout, theme, markerId, dimmed }: { layout: SequenceLa
             ) : (
               <line x1={x1} y1={step.y} x2={x2} y2={step.y} stroke="#343a40" strokeWidth={1.8} markerEnd={`url(#${markerId})`} />
             )}
-            <rect x={(x1 + x2) / 2 - labelWidth / 2} y={step.y - 26} width={labelWidth} height={20} rx={4} fill="var(--canvas-bg,#fff)" />
-            <text x={(x1 + x2) / 2} y={step.y - 12} textAnchor="middle" fontSize={12} fill="#343a40">
+            <text
+              x={(x1 + x2) / 2}
+              y={step.y - 12}
+              textAnchor="middle"
+              fontSize={12}
+              fill="#343a40"
+              stroke="var(--canvas-bg, #fff)"
+              strokeWidth={4}
+              paintOrder="stroke"
+              strokeLinejoin="round"
+            >
               {step.label}
             </text>
           </g>
