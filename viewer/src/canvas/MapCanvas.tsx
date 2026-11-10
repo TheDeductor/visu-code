@@ -150,29 +150,33 @@ function EdgeView({ edge, theme, dimmed, markerId }: { edge: LayoutEdge; theme: 
   return (
     <g opacity={dimmed ? 0.18 : 1} className="edge">
       <path d={layoutEdgePath(edge, 10)} fill="none" stroke="#495057" strokeWidth={theme.strokeWidth} markerEnd={`url(#${markerId})`} />
-      {edge.label && edge.labelLines.length ? (
-        <g>
-          <title>{edge.label}</title>
-          <text
-            x={edge.labelPos.x}
-            y={edge.labelPos.y - (edge.labelLines.length - 1) * 8.5}
-            textAnchor="middle"
-            dominantBaseline="middle"
-            fontSize={12.5}
-            fill="#495057"
-            stroke="var(--canvas-bg, #fff)"
-            strokeWidth={4}
-            paintOrder="stroke"
-            strokeLinejoin="round"
-          >
-            {edge.labelLines.map((line, index) => (
-              <tspan key={index} x={edge.labelPos.x} dy={index === 0 ? 0 : 17}>
-                {line}
-              </tspan>
-            ))}
-          </text>
-        </g>
-      ) : null}
+    </g>
+  );
+}
+
+function EdgeLabelView({ edge, dimmed }: { edge: LayoutEdge; dimmed: boolean }) {
+  if (!edge.label || !edge.labelLines.length) return null;
+  return (
+    <g opacity={dimmed ? 0.18 : 1} className="edge-label">
+      <title>{edge.label}</title>
+      <text
+        x={edge.labelPos.x}
+        y={edge.labelPos.y - (edge.labelLines.length - 1) * 8.5}
+        textAnchor="middle"
+        dominantBaseline="middle"
+        fontSize={12.5}
+        fill="#495057"
+        stroke="var(--canvas-bg, #fff)"
+        strokeWidth={4}
+        paintOrder="stroke"
+        strokeLinejoin="round"
+      >
+        {edge.labelLines.map((line, index) => (
+          <tspan key={index} x={edge.labelPos.x} dy={index === 0 ? 0 : 17}>
+            {line}
+          </tspan>
+        ))}
+      </text>
     </g>
   );
 }
@@ -471,8 +475,18 @@ export function MapCanvas(props: CanvasProps): React.ReactElement {
           {graph
             ? graph.groups.map((group) => (
                 <g key={group.id} className="vm-group">
-                  {roughPaths({ id: group.id, x: group.x, y: group.y, w: group.w, h: group.h, labelLines: [group.label], kind: 'group' }, 'rect', 'rgba(233,236,239,0.12)', '#adb5bd', { ...theme, roughness: 0, strokeWidth: 1.5 }, `group-${group.id}`, '6 5')}
-                  <text x={group.x + 14} y={group.y + 23} fontSize={13} fontWeight={700} fill="#495057">
+                  <rect
+                    x={group.x}
+                    y={group.y}
+                    width={group.w}
+                    height={group.h}
+                    rx={14}
+                    fill="var(--group-fill, rgba(233, 236, 239, 0.12))"
+                    stroke="var(--group-stroke, #adb5bd)"
+                    strokeWidth={1.5}
+                    strokeDasharray="6 5"
+                  />
+                  <text x={group.x + 14} y={group.y + 23} fontSize={13} fontWeight={700} fill="var(--group-label, #495057)">
                     {group.label}
                   </text>
                 </g>
@@ -604,6 +618,15 @@ export function MapCanvas(props: CanvasProps): React.ReactElement {
             }
             return null;
           })}
+          {graph
+            ? graph.edges.map((edge) => (
+                <EdgeLabelView
+                  key={`label-${edge.id}`}
+                  edge={edge}
+                  dimmed={!!focusSet && !(focusSet.has(edge.from) && focusSet.has(edge.to))}
+                />
+              ))
+            : null}
         </g>
       </svg>
       <div className="canvas-tools" role="toolbar" aria-label="Canvas zoom">
@@ -738,6 +761,9 @@ function ErdScene({ layout, theme, markerId }: { layout: ErdLayout; theme: Theme
             );
           })}
         </g>
+      ))}
+      {layout.relations.map((relation) => (
+        <EdgeLabelView key={`label-${relation.id}`} edge={relation} dimmed={false} />
       ))}
     </g>
   );

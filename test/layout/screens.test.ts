@@ -40,8 +40,12 @@ describe('Phase 6 screenshots and export polish', () => {
     await page.screenshot({ path: path.join(process.cwd(), 'docs', 'screens', `${name}.png`) });
   }
 
-  it('captures 00-overview at zoom >= 0.7', async () => {
+  it('captures 00-overview at zoom >= 0.7 in light and dark', async () => {
     await openAndCapture('00-overview');
+    await page.emulateMedia({ colorScheme: 'dark' });
+    await page.waitForTimeout(300);
+    await page.screenshot({ path: path.join(process.cwd(), 'docs', 'screens', '00-overview-dark.png') });
+    await page.emulateMedia({ colorScheme: 'light' });
   });
 
   it('captures agent-workflow at zoom >= 0.7', async () => {

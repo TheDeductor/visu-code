@@ -23,6 +23,7 @@ import {
   measureText,
   wrapText,
 } from './theme.js';
+import { edgeLabelBox } from './label-box.js';
 
 export interface LayoutOptions {
   sidecar?: MapLayoutSidecar | null;
@@ -864,8 +865,27 @@ function layoutGraph(map: GraphMap, theme: Theme, options: LayoutOptions): Graph
     };
   });
 
-  const width = Math.max(420, ...nodeBoxes.map((b) => b.x + b.w + 40), ...layoutGroups.map((g) => g.x + g.w + 40));
-  const height = Math.max(300, ...nodeBoxes.map((b) => b.y + b.h + 40), ...layoutGroups.map((g) => g.y + g.h + 40));
+  // Keep labels off the canvas origin; width/height below covers the far edges.
+  for (const edge of edges) {
+    const box = edgeLabelBox(edge);
+    if (!box) continue;
+    if (box.x < 8) edge.labelPos = { ...edge.labelPos, x: edge.labelPos.x + (8 - box.x) };
+    if (box.y < 8) edge.labelPos = { ...edge.labelPos, y: edge.labelPos.y + (8 - box.y) };
+  }
+
+  const labelBoxes = edges.map((edge) => edgeLabelBox(edge)).filter((box): box is NonNullable<typeof box> => !!box);
+  const width = Math.max(
+    420,
+    ...nodeBoxes.map((b) => b.x + b.w + 40),
+    ...layoutGroups.map((g) => g.x + g.w + 40),
+    ...labelBoxes.map((box) => box.x + box.w + 24),
+  );
+  const height = Math.max(
+    300,
+    ...nodeBoxes.map((b) => b.y + b.h + 40),
+    ...layoutGroups.map((g) => g.y + g.h + 40),
+    ...labelBoxes.map((box) => box.y + box.h + 24),
+  );
 
   return {
     type: 'graph',
@@ -1686,7 +1706,6 @@ function placeEdgeLabel(
   }
 
   const fontSize = 13;
-  const lineHeight = 17;
 
   interface Segment {
     p1: { x: number; y: number };
@@ -1757,12 +1776,10 @@ function placeEdgeLabel(
 
   for (const text of textVariants) {
     const lines = wrapText(text, 140, fontSize);
-    const lw = Math.max(...lines.map((l) => measureText(l, fontSize)), 0) + 14;
-    const lh = lines.length * lineHeight + 8;
 
     for (const seg of segments) {
       const tVals = [0.5, 0.4, 0.6, 0.3, 0.7, 0.2, 0.8];
-      const perpOffsets = [0, -14, 14, -28, 28];
+      const perpOffsets = [0, -14, 14, -28, 28, -42, 42, -56, 56];
 
       for (const t of tVals) {
         const baseX = seg.p1.x + t * (seg.p2.x - seg.p1.x);
@@ -1771,7 +1788,11 @@ function placeEdgeLabel(
         for (const perp of perpOffsets) {
           const cx = seg.horizontal ? baseX : baseX + perp;
           const cy = seg.horizontal ? baseY + perp : baseY;
-          const box = { x: cx - lw / 2, y: cy - lh / 2, w: lw, h: lh };
+          // Check the same box the viewer and metric render (halo included,
+          // multi-line y-offset included) with 1px safety.
+          const box = edgeLabelBox({ labelLines: lines, labelPos: { x: cx, y: cy } }, 5);
+          if (!box) continue;
+          if (box.x < 8 || box.y < 8) continue;
 
           if (!overlapsAnything(box)) {
             placedLabels.push(box);

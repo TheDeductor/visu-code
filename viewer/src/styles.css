@@ -20,6 +20,9 @@
   --error-soft: #fff5f5;
   --canvas-bg: #fbfcfd;
   --grid-dot: #d7dde3;
+  --group-fill: rgba(233, 236, 239, 0.12);
+  --group-stroke: #adb5bd;
+  --group-label: #495057;
   --shadow: 0 1px 2px rgba(16, 24, 40, 0.05), 0 8px 24px rgba(16, 24, 40, 0.06);
   --radius: 10px;
   --font: Inter, "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
@@ -42,6 +45,9 @@
     --accent-soft: #17324a;
     --canvas-bg: #191d23;
     --grid-dot: #2e3640;
+    --group-fill: rgba(148, 163, 184, 0.22);
+    --group-stroke: #64748b;
+    --group-label: #e2e8f0;
     --ok: #69db7c;
     --ok-soft: #173b22;
     --warn: #ffc078;

@@ -149,6 +149,35 @@ describe('layoutQuality', () => {
     expect(layoutQuality(layout, theme).edgeGroupCrossings).toBe(1);
   });
 
+  it('counts a label partly under a node using the rendered label box', () => {
+    const layout = graph({
+      width: 600,
+      height: 400,
+      nodes: [node('a', 0, 0, 120, 50)],
+      edges: [
+        edge('e', 'a', 'b', [{ x: 120, y: 25 }, { x: 300, y: 25 }], {
+          label: 'overlap',
+          labelPos: { x: 110, y: 25 },
+        }),
+      ],
+    });
+    expect(layoutQuality(layout, theme).labelOverlaps).toBeGreaterThanOrEqual(1);
+  });
+
+  it('counts a label outside the layout bounds', () => {
+    const layout = graph({
+      width: 100,
+      height: 50,
+      edges: [
+        edge('e', 'a', 'b', [{ x: 80, y: 25 }, { x: 120, y: 25 }], {
+          label: 'outside',
+          labelPos: { x: 140, y: 25 },
+        }),
+      ],
+    });
+    expect(layoutQuality(layout, theme).labelsOutsideBounds).toBe(1);
+  });
+
   it('counts group label overlaps with an edge and with an edge label', () => {
     const layout = graph({
       nodes: [
@@ -175,6 +204,7 @@ describe('layoutQuality', () => {
     expect(q.nodeOverlaps).toBe(0);
     expect(q.edgeGroupCrossings).toBe(0);
     expect(q.groupLabelOverlaps).toBe(0);
+    expect(q.labelsOutsideBounds).toBe(0);
     expect(q.maxNodeDegree).toBe(0);
     expect(q.bends).toBe(0);
     expect(q.aspectRatio).toBe(2);

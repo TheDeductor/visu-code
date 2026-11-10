@@ -1,5 +1,6 @@
 import type { GraphLayout, LayoutResult, Theme } from './types.js';
 import { defaultTheme } from './defaults.js';
+import { edgeLabelBox } from './label-box.js';
 import { measureText } from './theme.js';
 
 export interface LayoutQualityMetrics {
@@ -12,6 +13,7 @@ export interface LayoutQualityMetrics {
   edgeGroupCrossings: number;
   groupLabelOverlaps: number;
   labelOverlaps: number;
+  labelsOutsideBounds: number;
   portViolations: number;
   maxNodeDegree: number;
   aspectRatio: number;
@@ -114,6 +116,7 @@ export function layoutQuality(layout: LayoutResult, theme?: Theme): LayoutQualit
       edgeGroupCrossings: 0,
       groupLabelOverlaps: 0,
       labelOverlaps: 0,
+      labelsOutsideBounds: 0,
       portViolations: 0,
       maxNodeDegree: 0,
       aspectRatio: layout.width / Math.max(1, layout.height),
@@ -265,16 +268,19 @@ export function layoutQuality(layout: LayoutResult, theme?: Theme): LayoutQualit
   // 7. Label overlaps: label rect overlaps node, any other label, or group header band (top 44px)
   let labelOverlaps = 0;
   const labelBoxes: Array<{ x: number; y: number; w: number; h: number }> = [];
+  let labelsOutsideBounds = 0;
   for (const edge of graph.edges) {
-    if (!edge.label || !edge.labelLines.length) continue;
-    const lw = Math.max(...edge.labelLines.map((l) => measureText(l, 13)), 0) + 14;
-    const lh = edge.labelLines.length * 17 + 8;
-    labelBoxes.push({
-      x: edge.labelPos.x - lw / 2,
-      y: edge.labelPos.y - lh / 2,
-      w: lw,
-      h: lh,
-    });
+    const box = edgeLabelBox(edge);
+    if (!box) continue;
+    labelBoxes.push(box);
+    if (
+      box.x < 0 ||
+      box.y < 0 ||
+      box.x + box.w > graph.width ||
+      box.y + box.h > graph.height
+    ) {
+      labelsOutsideBounds++;
+    }
   }
 
   for (let i = 0; i < labelBoxes.length; i++) {
@@ -388,6 +394,7 @@ export function layoutQuality(layout: LayoutResult, theme?: Theme): LayoutQualit
     edgeGroupCrossings,
     groupLabelOverlaps,
     labelOverlaps,
+    labelsOutsideBounds,
     portViolations,
     maxNodeDegree,
     aspectRatio: graph.width / Math.max(1, graph.height),
