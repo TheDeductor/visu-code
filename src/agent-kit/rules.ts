@@ -6,7 +6,7 @@ import { writeFileAtomicSync } from '../core/yaml.js';
 export const MANAGED_START = '<!-- vibemap:start -->';
 export const MANAGED_END = '<!-- vibemap:end -->';
 
-export const AGENT_FILES: Record<Exclude<AgentTarget, 'generic'>, string> = {
+export const AGENT_FILES: Record<AgentTarget, string> = {
   'claude-code': 'CLAUDE.md',
   cursor: '.cursor/rules/vibemap.mdc',
   codex: 'AGENTS.md',
@@ -14,6 +14,7 @@ export const AGENT_FILES: Record<Exclude<AgentTarget, 'generic'>, string> = {
   gemini: 'GEMINI.md',
   windsurf: '.windsurf/rules/vibemap.md',
   aider: 'CONVENTIONS.md',
+  generic: 'AGENTS.md',
 };
 
 export function modeText(mode: ProjectConfig['tracking']['mode']): string {
@@ -95,9 +96,7 @@ export function writeAgentFiles(
 ): AgentWriteResult[] {
   const results: AgentWriteResult[] = [];
   for (const agent of agents) {
-    if (agent === 'generic') continue;
     const rel = AGENT_FILES[agent];
-    if (!rel) continue;
     const abs = path.join(root, rel);
     const existing = fs.existsSync(abs) ? fs.readFileSync(abs, 'utf8').replace(/\r\n/g, '\n') : '';
     let content: string;
@@ -116,9 +115,7 @@ export function writeAgentFiles(
 export function removeAgentFiles(root: string, agents: AgentTarget[]): AgentWriteResult[] {
   const results: AgentWriteResult[] = [];
   for (const agent of agents) {
-    if (agent === 'generic') continue;
     const rel = AGENT_FILES[agent];
-    if (!rel) continue;
     const abs = path.join(root, rel);
     if (!fs.existsSync(abs)) {
       results.push({ file: rel, action: 'skipped', note: 'not present' });

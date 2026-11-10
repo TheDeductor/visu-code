@@ -38,6 +38,15 @@ describe('managed rule blocks', () => {
     expect(block.split('\n').length).toBeLessThanOrEqual(12);
   });
 
+  it('writes the generic target to AGENTS.md', () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'vibemap-agent-'));
+    roots.push(root);
+    writeAgentFiles(root, defaultConfig('demo'), ['generic']);
+    const content = fs.readFileSync(path.join(root, 'AGENTS.md'), 'utf8');
+    expect(content).toContain(MANAGED_START);
+    expect(content).toContain('Read `.vibemap/AGENT_GUIDE.md` once per session.');
+  });
+
   it('contains the required short rules', () => {
     const block = managedBlock(defaultConfig('demo'));
     expect(block).toContain('Read `.vibemap/AGENT_GUIDE.md` once per session.');
