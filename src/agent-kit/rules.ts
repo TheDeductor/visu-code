@@ -42,6 +42,7 @@ Read \`.vibemap/AGENT_GUIDE.md\` once per session.
 - After editing: \`vibemap patch\`, \`vibemap check\`, \`vibemap change add\`.
 - Steps over time → \`sequence\`; components → a small graph.
 - Limits: overview ≤ ${overview} nodes, feature ≤ ${feature}, ≤ ${groups} groups, edges ≤ ${ratio}×nodes.
+- Hub node: leave out minor components or use a drill map.
 - Treat W120–W127 as errors. Never edit layouts/, locks, config or theme.
 - Tracking: **${config.tracking.mode}**, granularity **${config.tracking.granularity}**. ${modeText(config.tracking.mode)}
 ${MANAGED_END}`;

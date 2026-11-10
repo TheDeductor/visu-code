@@ -43,7 +43,8 @@ If your description of the map contains "first… then… finally", it is a **se
 ## Size and density rules (hard)
 
 - Overview ≤ ${overview.soft} nodes. Feature ≤ ${feature.soft}. Never more than ${limits.maxGroups} groups.
-- Edges ≤ ${limits.warnEdgeRatio} × nodes warn, ${limits.maxEdgeRatio} × nodes error. If a node has more than ${limits.maxDegree} connections, it is a hub: put its targets in one group and draw ONE edge to the group, or split the map.
+- Edges ≤ ${limits.warnEdgeRatio} × nodes warn, ${limits.maxEdgeRatio} × nodes error. If a node would have more than ${limits.maxDegree} connections, leave out the minor components, or move them into a separate drill map. Do not add a node just to avoid a hub.
+- Leaving out a real component is better than adding an isolated node or breaking a limit. A map shows what matters, not everything.
 - Every edge must change the reader's understanding. Do not draw "obvious" edges (everything → logging, everything → config).
 - Label at most ${Math.round(limits.maxLabelledEdgesRatio * 100)}% of edges. Labels ≤ ${limits.maxLabelChars} characters, verb phrases ("reads config", not "this reads the config file").
 - Node labels ≤ ${limits.maxLabelChars} characters. Put detail in \`description\` (≤ ${limits.maxDescriptionChars} chars) or a note.
@@ -51,7 +52,7 @@ If your description of the map contains "first… then… finally", it is a **se
 ## Structure rules
 
 - Left-to-right or top-to-bottom flow: sources/inputs first, outputs/stores last.
-- Groups = real boundaries (process, layer, team). A node belongs to **one** group. Do not create a group for fewer than 2 nodes.
+- Groups = real boundaries (process, layer, team). A node belongs to **one** group. A group needs at least 2 nodes. If a node does not fit a group, leave it ungrouped rather than forcing a loose group.
 - Prefer layers: at most 3 to 4 stages in the main direction.
 - Do not connect across more than 2 stages; add an intermediate node or drop the edge.
 - Drill down, do not pile on: if a node deserves detail, give it a \`drill\` map.

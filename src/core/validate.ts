@@ -126,6 +126,19 @@ export function validateProject(project: Project, opts: CheckOptions = {}): Chec
   const mapById = new Map<string, LoadedMap>();
   const evidenceByMap = new Map<string, Record<string, NodeEvidence>>();
   const config = project.config;
+  const RECOMMENDED_MAX_LABEL_CHARS = 24;
+  if (config.limits.maxLabelChars > RECOMMENDED_MAX_LABEL_CHARS) {
+    warnings.push(
+      issue(
+        'warning',
+        'W116',
+        '.vibemap/config.yaml',
+        `maxLabelChars is ${config.limits.maxLabelChars}; the recommended default is ${RECOMMENDED_MAX_LABEL_CHARS}.`,
+        undefined,
+        `Set limits.maxLabelChars: ${RECOMMENDED_MAX_LABEL_CHARS} to keep labels readable.`,
+      ),
+    );
+  }
 
   for (const mapItem of loaded.maps) {
     mapById.set(mapItem.id, mapItem);

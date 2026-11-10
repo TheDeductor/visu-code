@@ -38,7 +38,8 @@ If your description of the map contains "first… then… finally", it is a **se
 ## Size and density rules (hard)
 
 - Overview ≤ 9 nodes. Feature ≤ 10. Never more than 4 groups.
-- Edges ≤ 1.5 × nodes warn, 2 × nodes error. If a node has more than 5 connections, it is a hub: put its targets in one group and draw ONE edge to the group, or split the map.
+- Edges ≤ 1.5 × nodes warn, 2 × nodes error. If a node would have more than 5 connections, leave out the minor components, or move them into a separate drill map. Do not add a node just to avoid a hub.
+- Leaving out a real component is better than adding an isolated node or breaking a limit. A map shows what matters, not everything.
 - Every edge must change the reader's understanding. Do not draw "obvious" edges (everything → logging, everything → config).
 - Label at most 60% of edges. Labels ≤ 24 characters, verb phrases ("reads config", not "this reads the config file").
 - Node labels ≤ 24 characters. Put detail in \`description\` (≤ 200 chars) or a note.
@@ -46,7 +47,7 @@ If your description of the map contains "first… then… finally", it is a **se
 ## Structure rules
 
 - Left-to-right or top-to-bottom flow: sources/inputs first, outputs/stores last.
-- Groups = real boundaries (process, layer, team). A node belongs to **one** group. Do not create a group for fewer than 2 nodes.
+- Groups = real boundaries (process, layer, team). A node belongs to **one** group. A group needs at least 2 nodes. If a node does not fit a group, leave it ungrouped rather than forcing a loose group.
 - Prefer layers: at most 3 to 4 stages in the main direction.
 - Do not connect across more than 2 stages; add an intermediate node or drop the edge.
 - Drill down, do not pile on: if a node deserves detail, give it a \`drill\` map.
