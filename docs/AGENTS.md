@@ -16,7 +16,7 @@ Never invent refs. Planned nodes may omit them; built nodes may not.
 
 ## Managed rule blocks
 
-`vibemap init --agents claude,codex,cursor,generic` writes a guarded
+`vibemap init --agents claude-code,codex,cursor,generic` writes a guarded
 `<!-- vibemap:start --> … <!-- vibemap:end -->` block. The block is replaced on
 re-init and the surrounding file is preserved. Supported targets:
 
@@ -31,7 +31,7 @@ re-init and the surrounding file is preserved. Supported targets:
 
 ## Claude Code hooks
 
-`init --agents claude` writes `.claude/settings.json` entries equivalent to:
+`init --agents claude-code` writes `.claude/settings.json` entries equivalent to:
 
 ```json
 {

@@ -74,9 +74,9 @@ or commits anything.
 
 ### Agent integration
 
-- **Rules:** `init --agents claude,codex,cursor,generic` writes guarded blocks
+- **Rules:** `init --agents claude-code,codex,cursor,generic` writes guarded blocks
   into each agent's instruction file.
-- **Claude Code hooks:** `init --agents claude` adds a fast post-edit hook and a
+- **Claude Code hooks:** `init --agents claude-code` adds a fast post-edit hook and a
   stop gate. `hook post-edit` records touched files; `hook stop` exits `2` while
   drift remains.
 - **MCP:** register a stdio server, then use the `vibemap_*` tools:
