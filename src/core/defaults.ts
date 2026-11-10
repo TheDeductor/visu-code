@@ -26,7 +26,23 @@ export function defaultConfig(projectName = 'my-app'): ProjectConfig {
         '**/migrations/**',
       ],
     },
-    limits: { softMaxNodes: 15, hardMaxNodes: 30, maxLabelChars: 40, maxDescriptionChars: 200 },
+    limits: {
+      softMaxNodes: 15,
+      hardMaxNodes: 30,
+      maxLabelChars: 24,
+      maxDescriptionChars: 200,
+      nodeCaps: {
+        overview: { soft: 9, hard: 12 },
+        feature: { soft: 10, hard: 16 },
+        detail: { soft: 16, hard: 20 },
+      },
+      maxEdgeRatio: 2,
+      warnEdgeRatio: 1.5,
+      maxGroups: 4,
+      maxDegree: 5,
+      maxLabelledEdgesRatio: 0.6,
+      maxRankDepth: 6,
+    },
     validation: { strict: false, requireRefs: true },
     editing: { autoLockHumanEdits: true, newNodeStatus: 'planned' },
     viewer: { port: 4317, host: '127.0.0.1', open: true, defaultTab: 'maps', beginnerMode: false },
@@ -92,8 +108,18 @@ paths:
 limits:
   softMaxNodes: 15
   hardMaxNodes: 30
-  maxLabelChars: 40
+  maxLabelChars: 24
   maxDescriptionChars: 200
+  nodeCaps:
+    overview: { soft: 9, hard: 12 }
+    feature: { soft: 10, hard: 16 }
+    detail: { soft: 16, hard: 20 }
+  maxEdgeRatio: 2
+  warnEdgeRatio: 1.5
+  maxGroups: 4
+  maxDegree: 5
+  maxLabelledEdgesRatio: 0.6
+  maxRankDepth: 6
 validation:
   strict: false
   requireRefs: true

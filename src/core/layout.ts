@@ -155,6 +155,18 @@ function rankNodes(ids: string[], edges: EdgeInput[]): Map<string, number> {
   return ranks;
 }
 
+/** Rank assignment for a graph map, exposed for validation (W124/W127). */
+export function rankGraph(map: GraphMap): Map<string, number> {
+  const ids = map.nodes.map((node) => node.id);
+  const edges: EdgeInput[] = map.edges.map((edge, index) => ({
+    id: edgeId(edge, index),
+    from: edge.from,
+    to: edge.to,
+    kind: edge.kind,
+  }));
+  return rankNodes(ids, edges);
+}
+
 function getPrevPos(
   id: string,
   previous: Map<string, { x: number; y: number }>

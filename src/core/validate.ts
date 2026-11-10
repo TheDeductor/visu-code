@@ -20,6 +20,7 @@ import { isNodeLocked, lockKey, lockStatus, nodeLockHash } from './locks.js';
 import { getSection, listChangeFiles, listChanges, parseChange } from './changes.js';
 import { listNotes, parseNote, noteReferences } from './notes.js';
 import { pendingDriftWarnings } from './drift.js';
+import { rankGraph } from './layout.js';
 import { isCodeLanguage, mapFileFromId, toPosix } from './paths.js';
 import { LayoutSidecarSchema, PhasesSchema } from './schema.js';
 import { lineForPath, parseYamlFile, readJsonFile } from './yaml.js';
@@ -165,6 +166,7 @@ export function validateProject(project: Project, opts: CheckOptions = {}): Chec
       map.type === 'graph' ? map.edges.length : map.type === 'sequence' ? map.steps.length : map.type === 'erd' ? map.relations.length : 0;
     stats.nodes += nodeCount;
     stats.edges += edgeCount;
+    const caps = map.level ? config.limits.nodeCaps[map.level] : undefined;
     if (nodeCount > config.limits.hardMaxNodes) {
       errors.push(
         issue(
@@ -178,15 +180,47 @@ export function validateProject(project: Project, opts: CheckOptions = {}): Chec
         ),
       );
     }
-    if (nodeCount > config.limits.softMaxNodes) {
+    if (caps && nodeCount > caps.hard) {
+      errors.push(
+        issue(
+          'error',
+          'E017',
+          file,
+          `Map has ${nodeCount} nodes, above the ${map.level} hard cap of ${caps.hard}.`,
+          undefined,
+          'Split into a feature map and link with `drill`.',
+          `vibemap map new <new-id> --level feature`,
+        ),
+      );
+    }
+    const softCap = caps?.soft ?? config.limits.softMaxNodes;
+    if (nodeCount > softCap) {
       warnings.push(
-        issue('warning', 'W102', file, `${nodeCount} nodes (soft limit ${config.limits.softMaxNodes}). Consider splitting into feature maps.`),
+        issue(
+          'warning',
+          'W102',
+          file,
+          `${nodeCount} nodes (soft limit ${softCap}${map.level ? ` for ${map.level}` : ''}). Consider splitting into feature maps.`,
+        ),
+      );
+    }
+    if (map.type === 'graph' && map.nodes.length > 0 && map.edges.length / map.nodes.length > config.limits.maxEdgeRatio) {
+      errors.push(
+        issue(
+          'error',
+          'E018',
+          file,
+          `${map.edges.length} edges for ${map.nodes.length} nodes (ratio ${(map.edges.length / map.nodes.length).toFixed(2)}, max ${config.limits.maxEdgeRatio}).`,
+          undefined,
+          'Remove edges that do not change understanding, or split the map.',
+          'vibemap inspect <map>',
+        ),
       );
     }
     if (map.type === 'graph') {
       validateGraph(mapItem, map, facts, config, errors, warnings, stats, project.root);
-      if (map.nodes.length > 1 && map.edges.length > map.nodes.length * 2.5) {
-        warnings.push(issue('warning', 'W110', file, `${map.edges.length} edges for ${map.nodes.length} nodes (spaghetti threshold).`, undefined, 'Group related nodes, remove redundant edges, or split the map.'));
+      if (map.nodes.length > 1 && map.edges.length / map.nodes.length > config.limits.warnEdgeRatio) {
+        warnings.push(issue('warning', 'W110', file, `${map.edges.length} edges for ${map.nodes.length} nodes (ratio above ${config.limits.warnEdgeRatio}).`, undefined, 'Group related nodes, remove redundant edges, or split the map.'));
       }
       if (map.nodes.length > 0) {
         const connected = new Set<string>();
@@ -525,7 +559,135 @@ function validateGraph(
       warnings.push(issue('warning', 'W112', file, `Duplicate edge ${edge.from} → ${edge.to} (${edge.kind}).`, lineOf(mapItem, ['edges', index])));
     }
     duplicateEdgeKeys.add(key);
+    if (edge.label && edge.label.length > config.limits.maxLabelChars) {
+      warnings.push(
+        issue(
+          'warning',
+          'W101',
+          file,
+          `Edge label "${edge.label}" is ${edge.label.length} chars (max ${config.limits.maxLabelChars}).`,
+          lineOf(mapItem, ['edges', index, 'label']),
+          'Use a short verb phrase and put detail in a note.',
+        ),
+      );
+    }
   });
+
+  // Content-density rules (no layout required).
+  const degree = new Map<string, number>();
+  for (const edge of map.edges) {
+    degree.set(edge.from, (degree.get(edge.from) ?? 0) + 1);
+    degree.set(edge.to, (degree.get(edge.to) ?? 0) + 1);
+  }
+  const hub = map.nodes.find((node) => (degree.get(node.id) ?? 0) > config.limits.maxDegree);
+  if (hub) {
+    warnings.push(
+      issue(
+        'warning',
+        'W120',
+        file,
+        `Node "${hub.id}" has ${degree.get(hub.id)} connections (max ${config.limits.maxDegree}).`,
+        lineOf(mapItem, ['nodes', map.nodes.indexOf(hub)]),
+        'Hub node. Group its targets and connect to the group once, or split.',
+      ),
+    );
+  }
+
+  const labelledEdges = map.edges.filter((edge) => !!edge.label?.trim()).length;
+  if (map.edges.length > 0 && labelledEdges / map.edges.length > config.limits.maxLabelledEdgesRatio) {
+    warnings.push(
+      issue(
+        'warning',
+        'W122',
+        file,
+        `${labelledEdges} of ${map.edges.length} edges are labelled (max ${Math.round(config.limits.maxLabelledEdgesRatio * 100)}%).`,
+        undefined,
+        'Keep labels only where the relationship is not obvious.',
+      ),
+    );
+  }
+
+  const groupCount = map.groups?.length ?? 0;
+  if (groupCount > config.limits.maxGroups) {
+    warnings.push(
+      issue(
+        'warning',
+        'W123',
+        file,
+        `Map has ${groupCount} groups (max ${config.limits.maxGroups}).`,
+        lineOf(mapItem, ['groups', config.limits.maxGroups]),
+        'Merge groups or split the map.',
+      ),
+    );
+  }
+
+  const ranks = rankGraph(map);
+  const rankDepth = Math.max(0, ...map.nodes.map((node) => ranks.get(node.id) ?? 0));
+  if (rankDepth > config.limits.maxRankDepth) {
+    warnings.push(
+      issue(
+        'warning',
+        'W124',
+        file,
+        `Rank depth is ${rankDepth + 1} layers (max ${config.limits.maxRankDepth}).`,
+        undefined,
+        'Long chain. Use a sequence map or split.',
+      ),
+    );
+  }
+
+  const processLike = map.nodes.filter((node) => node.kind === 'process' || node.kind === 'file').length;
+  if (
+    map.nodes.length > 0 &&
+    processLike / map.nodes.length >= 0.6 &&
+    rankDepth + 1 >= map.nodes.length * 0.7
+  ) {
+    warnings.push(
+      issue(
+        'warning',
+        'W125',
+        file,
+        `${processLike} of ${map.nodes.length} nodes are process/file and the longest path covers most of the map.`,
+        undefined,
+        'Use `type: sequence` or a `down` flow of 8 steps or fewer.',
+      ),
+    );
+  }
+
+  const crossGroupEdges = map.edges.filter((edge) => {
+    const fromGroup = nodeById.get(edge.from)?.group;
+    const toGroup = nodeById.get(edge.to)?.group;
+    return fromGroup !== toGroup;
+  }).length;
+  if (map.edges.length > 0 && crossGroupEdges / map.edges.length > 0.5) {
+    warnings.push(
+      issue(
+        'warning',
+        'W126',
+        file,
+        `${crossGroupEdges} of ${map.edges.length} edges cross groups (over 50%).`,
+        undefined,
+        'Groups do not match the real structure. Regroup.',
+      ),
+    );
+  }
+
+  const longEdgeIndex = map.edges.findIndex(
+    (edge) => Math.abs((ranks.get(edge.to) ?? 0) - (ranks.get(edge.from) ?? 0)) > 2,
+  );
+  if (longEdgeIndex >= 0) {
+    const edge = map.edges[longEdgeIndex]!;
+    warnings.push(
+      issue(
+        'warning',
+        'W127',
+        file,
+        `Edge ${edge.from} → ${edge.to} spans more than two ranks.`,
+        lineOf(mapItem, ['edges', longEdgeIndex]),
+        'Long edge. Consider an intermediate node or remove it.',
+      ),
+    );
+  }
 
   const groupDupes = new Set<string>();
   const seenGroups = new Set<string>();

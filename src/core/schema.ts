@@ -234,8 +234,35 @@ export const ConfigSchema = z
       .object({
         softMaxNodes: z.number().int().min(1).default(15),
         hardMaxNodes: z.number().int().min(1).default(30),
-        maxLabelChars: z.number().int().min(1).default(40),
+        maxLabelChars: z.number().int().min(1).default(24),
         maxDescriptionChars: z.number().int().min(1).default(200),
+        nodeCaps: z
+          .object({
+            overview: z
+              .object({ soft: z.number().int().min(1).default(9), hard: z.number().int().min(1).default(12) })
+              .strict()
+              .default({ soft: 9, hard: 12 }),
+            feature: z
+              .object({ soft: z.number().int().min(1).default(10), hard: z.number().int().min(1).default(16) })
+              .strict()
+              .default({ soft: 10, hard: 16 }),
+            detail: z
+              .object({ soft: z.number().int().min(1).default(16), hard: z.number().int().min(1).default(20) })
+              .strict()
+              .default({ soft: 16, hard: 20 }),
+          })
+          .strict()
+          .default({
+            overview: { soft: 9, hard: 12 },
+            feature: { soft: 10, hard: 16 },
+            detail: { soft: 16, hard: 20 },
+          }),
+        maxEdgeRatio: z.number().min(1).default(2),
+        warnEdgeRatio: z.number().min(1).default(1.5),
+        maxGroups: z.number().int().min(1).default(4),
+        maxDegree: z.number().int().min(1).default(5),
+        maxLabelledEdgesRatio: z.number().min(0).max(1).default(0.6),
+        maxRankDepth: z.number().int().min(1).default(6),
       })
       .strict()
       .default(defaultConfig().limits),

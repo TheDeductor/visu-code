@@ -250,6 +250,17 @@ export interface ProjectConfig {
     hardMaxNodes: number;
     maxLabelChars: number;
     maxDescriptionChars: number;
+    nodeCaps: {
+      overview: { soft: number; hard: number };
+      feature: { soft: number; hard: number };
+      detail: { soft: number; hard: number };
+    };
+    maxEdgeRatio: number;
+    warnEdgeRatio: number;
+    maxGroups: number;
+    maxDegree: number;
+    maxLabelledEdgesRatio: number;
+    maxRankDepth: number;
   };
   validation: { strict: boolean; requireRefs: boolean };
   editing: { autoLockHumanEdits: boolean; newNodeStatus: NodeStatus };
