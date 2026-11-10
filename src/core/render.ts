@@ -11,6 +11,7 @@ import type {
 import { fillForKind, labelFontSize, measureText, shapeForKind, wrapText } from './theme.js';
 import { layoutMap } from './layout.js';
 import { layoutEdgePath } from './geometry.js';
+import { layoutMapAsync, type LayoutEngineName } from './layout-engine.js';
 
 export type ExportFormat = 'svg' | 'png' | 'excalidraw' | 'mermaid' | 'md';
 
@@ -386,6 +387,23 @@ export function layoutFor(map: VibeMap, theme: Theme, sidecar?: MapLayoutSidecar
 
 export function renderFormat(map: VibeMap, theme: Theme, format: ExportFormat, evidence?: EvidenceMap, sidecar?: MapLayoutSidecar | null, mapId = 'map'): string {
   const layout = layoutFor(map, theme, sidecar);
+  if (format === 'svg') return renderSvg(map, theme, layout, evidence, sidecar);
+  if (format === 'mermaid') return renderMermaid(map);
+  if (format === 'md') return renderMarkdown(map, evidence);
+  if (format === 'excalidraw') return JSON.stringify(renderExcalidraw(map, theme, layout, mapId), null, 2);
+  throw new Error('PNG export requires the optional Playwright dependency. Use --format svg for now.');
+}
+
+export async function renderFormatAsync(
+  map: VibeMap,
+  theme: Theme,
+  format: ExportFormat,
+  evidence?: EvidenceMap,
+  sidecar?: MapLayoutSidecar | null,
+  mapId = 'map',
+  engine: LayoutEngineName = 'legacy',
+): Promise<string> {
+  const layout = await layoutMapAsync(map, theme, { sidecar, engine });
   if (format === 'svg') return renderSvg(map, theme, layout, evidence, sidecar);
   if (format === 'mermaid') return renderMermaid(map);
   if (format === 'md') return renderMarkdown(map, evidence);

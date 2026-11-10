@@ -6,6 +6,7 @@ import { layoutMap } from './layout.js';
 import { measureText } from './theme.js';
 import { mapFileFromId } from './paths.js';
 import { layoutQuality, type LayoutQualityMetrics } from './layout-quality.js';
+import { layoutMapAsync, type LayoutEngineName } from './layout-engine.js';
 
 export { layoutQuality };
 export type LayoutQuality = LayoutQualityMetrics;
@@ -31,10 +32,12 @@ export interface InspectReport {
   layout: LayoutResult;
 }
 
-export function inspectMap(project: Project, id: string): InspectReport {
-  const loaded = loadMap(project, id);
-  const sidecar = readLayout(project, id);
-  const layout = layoutMap(loaded.map, project.theme, { sidecar });
+function buildInspectReport(
+  project: Project,
+  id: string,
+  loaded: ReturnType<typeof loadMap>,
+  layout: LayoutResult,
+): InspectReport {
   const quality = layoutQuality(layout, project.theme);
   const overlaps = quality.nodeOverlaps;
   const edgeCrossings = quality.edgeCrossings;
@@ -67,6 +70,24 @@ export function inspectMap(project: Project, id: string): InspectReport {
     quality,
     layout,
   };
+}
+
+export function inspectMap(project: Project, id: string): InspectReport {
+  const loaded = loadMap(project, id);
+  const sidecar = readLayout(project, id);
+  const layout = layoutMap(loaded.map, project.theme, { sidecar });
+  return buildInspectReport(project, id, loaded, layout);
+}
+
+export async function inspectMapAsync(
+  project: Project,
+  id: string,
+  engine: LayoutEngineName = 'legacy',
+): Promise<InspectReport> {
+  const loaded = loadMap(project, id);
+  const sidecar = readLayout(project, id);
+  const layout = await layoutMapAsync(loaded.map, project.theme, { sidecar, engine });
+  return buildInspectReport(project, id, loaded, layout);
 }
 
 export function formatInspect(report: InspectReport): string {

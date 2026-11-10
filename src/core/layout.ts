@@ -63,7 +63,7 @@ function round(n: number): number {
   return Math.round(n * 10) / 10;
 }
 
-function edgeId(edge: { id?: string; from: string; to: string; kind: string }, index: number): string {
+export function edgeId(edge: { id?: string; from: string; to: string; kind: string }, index: number): string {
   return edge.id ?? `${edge.from}>${edge.to}:${edge.kind}#${index}`;
 }
 
@@ -75,7 +75,7 @@ function previousByName(previous?: LayoutResult | null): Map<string, { x: number
   return out;
 }
 
-function measureNodeBox(
+export function measureNodeBox(
   label: string,
   kind: string,
   theme: Theme,

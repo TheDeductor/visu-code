@@ -89,6 +89,15 @@ function mapIdFromLayoutFile(rel: string): string {
     .replace(/\.layout\.json$/, '');
 }
 
+/**
+ * Async entry point for validators that will need headless layout in Phase 5.
+ * Today it delegates to the synchronous validator; keeping it here lets the
+ * CLI/server switch to awaited layout checks without another API break.
+ */
+export async function validateProjectAsync(project: Project, opts: CheckOptions = {}): Promise<CheckReport> {
+  return validateProject(project, opts);
+}
+
 export function validateProject(project: Project, opts: CheckOptions = {}): CheckReport {
   const errors: Issue[] = [];
   const warnings: Issue[] = [];
