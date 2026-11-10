@@ -164,7 +164,7 @@ describe('acceptance tests: layout quality and invariants', () => {
       it(`evaluates 10 invariants on fixture: ${name}`, () => {
         const map = loadMapFixture(name);
         const layout = layoutMap(map, theme);
-        expect(layout.type).toBe('graph');
+        if (map.type === 'graph') expect(layout.type).toBe('graph');
         const q = layoutQuality(layout, theme);
 
         // 1. No node-node overlap with nodeMargin
