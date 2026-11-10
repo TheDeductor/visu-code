@@ -7,8 +7,8 @@ Layout engine: **legacy** (`src/core/layout.ts`).
 
 | map | type | nodes | edges | groups | nodeOverlaps | groupOverlaps | groupMarginViolations | groupContainmentViolations | edgeNodeCrossings | edgeCrossings | edgeGroupCrossings | groupLabelOverlaps | labelOverlaps | portViolations | maxNodeDegree | aspect | bends | pinned | canvas |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| 00-overview | graph | 14 | 16 | 5 | 0 | 0 | 0 | 0 | 0 | 28 | 1 | 0 | 0 | 0 | 7 | 1.39 | 38 | 5 | 1780x1278 |
-| agent-workflow | graph | 10 | 12 | 3 | 0 | 0 | 0 | 0 | 0 | 2 | 2 | 1 | 0 | 0 | 6 | 1.21 | 46 | 2 | 1114x922 |
+| 00-overview | graph | 8 | 9 | 3 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 1 | 0 | 0 | 4 | 1.24 | 24 | 0 | 860x696 |
+| agent-workflow | sequence | 4 | 8 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 1.32 | 0 | 0 | 876x666 |
 | diagram-pipeline | graph | 11 | 13 | 4 | 0 | 0 | 0 | 0 | 0 | 10 | 0 | 1 | 0 | 0 | 5 | 1.07 | 35 | 5 | 959x894 |
 | drift-detection | graph | 10 | 9 | 3 | 0 | 0 | 0 | 0 | 0 | 1 | 0 | 0 | 0 | 0 | 4 | 1.99 | 25 | 0 | 1273x640 |
 | frontend-ui | graph | 10 | 11 | 4 | 0 | 0 | 0 | 0 | 0 | 2 | 0 | 1 | 0 | 0 | 8 | 1.19 | 34 | 3 | 1174x986 |
