@@ -2,6 +2,7 @@ import React from 'react';
 import { Badge } from '@astryxdesign/core/Badge';
 import { Button } from '@astryxdesign/core/Button';
 import { IconButton } from '@astryxdesign/core/IconButton';
+import { SegmentedControl, SegmentedControlItem } from '@astryxdesign/core/SegmentedControl';
 import { Switch } from '@astryxdesign/core/Switch';
 import { Tab, TabList } from '@astryxdesign/core/TabList';
 import type { CheckReport, MapSummary, ViewerTab } from '@core/types';
@@ -93,14 +94,10 @@ export function TopBar({
         </button>
         <span className={`live-dot live-${live}`} title={live === 'live' ? 'Live updates connected' : live === 'connecting' ? 'Connecting…' : 'Disconnected'} />
         <Switch label="Beginner" value={beginner} onChange={(val) => onBeginner(val)} size="sm" />
-        <div className="segmented" role="group" aria-label="Mode">
-          <button type="button" className={mode === 'view' ? 'active' : ''} onClick={() => onMode('view')}>
-            View
-          </button>
-          <button type="button" className={mode === 'edit' ? 'active' : ''} onClick={() => onMode('edit')} title="Edit mode (E)">
-            Edit
-          </button>
-        </div>
+        <SegmentedControl label="Mode" value={mode} onChange={(val) => onMode(val as 'view' | 'edit')} size="sm">
+          <SegmentedControlItem value="view" label="View" />
+          <SegmentedControlItem value="edit" label="Edit" />
+        </SegmentedControl>
         <div className="menu-wrap">
           <IconButton label="Export menu" tooltip="Export" icon={<span aria-hidden="true">⇩</span>} variant="ghost" size="sm" />
           <div className="menu">
