@@ -283,8 +283,11 @@ export function App({
         setCheck(mapsResponse.check);
         setBeginner(projectResponse.config.viewer.beginnerMode || localStorage.getItem('vibemap:beginner') === '1');
         setTab(projectResponse.config.viewer.defaultTab ?? 'maps');
+        const urlParams = new URLSearchParams(window.location.search);
+        const urlMap = urlParams.get('map') || window.location.hash.replace(/^#/, '');
         const remembered = localStorage.getItem('vibemap:lastMap');
         const initial =
+          (urlMap && mapsResponse.maps.some((map) => map.id === urlMap) ? urlMap : null) ??
           (remembered && mapsResponse.maps.some((map) => map.id === remembered) ? remembered : null) ??
           (mapsResponse.maps.some((map) => map.id === '00-overview') ? '00-overview' : mapsResponse.maps[0]?.id ?? null);
         setSelectedMapId(initial);
@@ -844,6 +847,13 @@ export function App({
       setSelectedMapId(id);
       setTab('maps');
       setModal(null);
+      try {
+        const url = new URL(window.location.href);
+        url.searchParams.set('map', id);
+        window.history.replaceState(null, '', url.toString());
+      } catch {
+        // ignore in non-browser envs
+      }
     },
     [],
   );
