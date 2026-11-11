@@ -2,6 +2,7 @@ import React from 'react';
 import { Dialog, DialogHeader } from '@astryxdesign/core/Dialog';
 import { Badge as AstryxBadge } from '@astryxdesign/core/Badge';
 import { IconButton } from '@astryxdesign/core/IconButton';
+import { Toast as AstryxToast } from '@astryxdesign/core/Toast';
 import { classNames } from '../util';
 
 export function Modal({
@@ -98,12 +99,16 @@ export function EmptyState({
 }
 
 export function Toast({ message, tone = 'info', onClose }: { message: string; tone?: 'info' | 'ok' | 'error' | 'warn'; onClose: () => void }): React.ReactElement {
+  const type = tone === 'error' ? 'error' : 'info';
   return (
-    <div className={`toast toast-${tone}`} role="status">
-      <span>{message}</span>
-      <button type="button" onClick={onClose} aria-label="Dismiss">
-        ×
-      </button>
+    <div style={{ position: 'fixed', right: '18px', bottom: '18px', zIndex: 200 }}>
+      <AstryxToast
+        type={type}
+        body={message}
+        isAutoHide={true}
+        autoHideDuration={4500}
+        onDismiss={() => onClose()}
+      />
     </div>
   );
 }
