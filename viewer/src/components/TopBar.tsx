@@ -2,6 +2,7 @@ import React from 'react';
 import { Badge } from '@astryxdesign/core/Badge';
 import { Button } from '@astryxdesign/core/Button';
 import { IconButton } from '@astryxdesign/core/IconButton';
+import { Popover } from '@astryxdesign/core/Popover';
 import { SegmentedControl, SegmentedControlItem } from '@astryxdesign/core/SegmentedControl';
 import { Switch } from '@astryxdesign/core/Switch';
 import { Tab, TabList } from '@astryxdesign/core/TabList';
@@ -86,12 +87,26 @@ export function TopBar({
       </TabList>
       <div className="topbar-actions">
         <IconButton label="Search (Ctrl/Cmd+K)" tooltip="Search (Ctrl/Cmd+K)" icon={<span aria-hidden="true">⌕</span>} variant="ghost" size="sm" onClick={onSearch} />
-        <button type="button" className={classNames('check-pill', errors ? 'has-errors' : warnings ? 'has-warnings' : 'is-ok')} onClick={onProblems} title="Validation problems">
-          <Badge
-            label={`${errors ? `${errors} error${errors === 1 ? '' : 's'}` : warnings ? `${warnings} warning${warnings === 1 ? '' : 's'}` : 'check ok'} ${problemsOpen ? '▾' : '▸'}`}
-            variant={errors ? 'error' : warnings ? 'warning' : 'success'}
-          />
-        </button>
+        <Popover
+          label="Validation problems"
+          placement="below"
+          alignment="end"
+          content={
+            <div style={{ padding: '8px 12px' }}>
+              <div><strong>{errors ? `${errors} error${errors === 1 ? '' : 's'}` : warnings ? `${warnings} warning${warnings === 1 ? '' : 's'}` : 'Check passed'}</strong></div>
+              <div style={{ marginTop: '8px' }}>
+                <Button label="View in panel" size="sm" variant="secondary" onClick={onProblems} />
+              </div>
+            </div>
+          }
+        >
+          <button type="button" className={classNames('check-pill', errors ? 'has-errors' : warnings ? 'has-warnings' : 'is-ok')} title="Validation problems">
+            <Badge
+              label={`${errors ? `${errors} error${errors === 1 ? '' : 's'}` : warnings ? `${warnings} warning${warnings === 1 ? '' : 's'}` : 'check ok'} ${problemsOpen ? '▾' : '▸'}`}
+              variant={errors ? 'error' : warnings ? 'warning' : 'success'}
+            />
+          </button>
+        </Popover>
         <span className={`live-dot live-${live}`} title={live === 'live' ? 'Live updates connected' : live === 'connecting' ? 'Connecting…' : 'Disconnected'} />
         <Switch label="Beginner" value={beginner} onChange={(val) => onBeginner(val)} size="sm" />
         <SegmentedControl label="Mode" value={mode} onChange={(val) => onMode(val as 'view' | 'edit')} size="sm">
