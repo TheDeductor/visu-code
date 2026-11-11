@@ -1,4 +1,5 @@
 import React, { useEffect } from 'react';
+import { IconButton } from '@astryxdesign/core/IconButton';
 import { classNames } from '../util';
 
 export function Modal({
@@ -31,9 +32,7 @@ export function Modal({
             <h2>{title}</h2>
             {subtitle ? <p>{subtitle}</p> : null}
           </div>
-          <button type="button" className="icon-btn" onClick={onClose} aria-label="Close">
-            ×
-          </button>
+          <IconButton label="Close" icon={<span aria-hidden="true">×</span>} variant="ghost" size="sm" onClick={onClose} />
         </header>
         <div className="modal-body">{children}</div>
         {footer ? <footer className="modal-foot">{footer}</footer> : null}

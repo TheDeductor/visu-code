@@ -1,4 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { Button } from '@astryxdesign/core/Button';
+import { IconButton } from '@astryxdesign/core/IconButton';
 import type { ChangeEntry, CodeRef, NodeKind, NodeStatus, VibeNode } from '@core/types';
 import { NODE_KINDS, NODE_STATUSES } from '@core/types';
 import { kindLabel } from '@core/theme';
@@ -141,9 +143,7 @@ export function Inspector({
               </div>
               {map.walkthrough?.length ? (
                 <div className="inspector-section">
-                  <button type="button" className="btn full" onClick={onStartWalkthrough}>
-                    ▶ Start walkthrough ({map.walkthrough.length} steps)
-                  </button>
+                  <Button label={`▶ Start walkthrough (${map.walkthrough.length} steps)`} variant="secondary" width="100%" onClick={onStartWalkthrough} />
                 </div>
               ) : null}
               <div className="inspector-section">
@@ -200,9 +200,7 @@ export function Inspector({
             </div>
           </div>
           <div className="inspector-section">
-            <button type="button" className="btn subtle full" onClick={onOpenNotes}>
-              Open related notes
-            </button>
+            <Button label="Open related notes" variant="ghost" width="100%" onClick={onOpenNotes} />
           </div>
         </div>
       </aside>
@@ -281,9 +279,7 @@ export function Inspector({
             </span>
             <h2>{node.label}</h2>
           </div>
-          <button type="button" className="icon-btn" onClick={() => onSelectNode('')} aria-label="Clear selection">
-            ×
-          </button>
+          <IconButton label="Clear selection" icon={<span aria-hidden="true">×</span>} variant="ghost" size="sm" onClick={() => onSelectNode('')} />
         </div>
         <div className="inspector-badges">
           <Badge tone={evidenceTone}>{evidence?.status ?? 'declared'}</Badge>
@@ -344,25 +340,15 @@ export function Inspector({
                 <div key={index} className="ref-editor">
                   <input placeholder="src/path.ts" value={ref.path} onChange={(event) => setRefs(refs.map((r, i) => (i === index ? { ...r, path: event.target.value } : r)))} />
                   <input placeholder="symbol (optional)" value={ref.symbol} onChange={(event) => setRefs(refs.map((r, i) => (i === index ? { ...r, symbol: event.target.value } : r)))} />
-                  <button type="button" className="icon-btn" onClick={() => setRefs(refs.filter((_, i) => i !== index))} aria-label="Remove ref">
-                    ×
-                  </button>
+                  <IconButton label="Remove ref" icon={<span aria-hidden="true">×</span>} variant="ghost" size="sm" onClick={() => setRefs(refs.filter((_, i) => i !== index))} />
                 </div>
               ))}
-              <button type="button" className="btn small subtle" onClick={() => setRefs([...refs, { path: '', symbol: '' }])}>
-                + Add ref
-              </button>
+              <Button label="+ Add ref" variant="ghost" size="sm" onClick={() => setRefs([...refs, { path: '', symbol: '' }])} />
             </div>
             <div className="inspector-actions">
-              <button type="button" className="btn primary" onClick={() => void save()} disabled={saving}>
-                {saving ? 'Saving…' : 'Save changes'}
-              </button>
-              <button type="button" className="btn subtle" onClick={() => setDraft({ ...draft, label: node.label, kind: node.kind, description: node.description ?? '', plain: node.plain ?? '', status: node.status ?? 'built' })}>
-                Reset
-              </button>
-              <button type="button" className="btn danger" onClick={() => void onDeleteNode(node.id)}>
-                Delete
-              </button>
+              <Button label={saving ? 'Saving…' : 'Save changes'} variant="primary" isDisabled={saving} onClick={() => void save()} />
+              <Button label="Reset" variant="ghost" onClick={() => setDraft({ ...draft, label: node.label, kind: node.kind, description: node.description ?? '', plain: node.plain ?? '', status: node.status ?? 'built' })} />
+              <Button label="Delete" variant="destructive" onClick={() => void onDeleteNode(node.id)} />
             </div>
             <p className="muted small">Saving a human edit auto-locks this node so agents cannot overwrite it silently.</p>
           </>
@@ -385,9 +371,7 @@ export function Inspector({
                       {ref.symbol ? <span>#{ref.symbol}</span> : null}
                       {ref.lines ? <span className="muted">:{ref.lines[0]}–{ref.lines[1]}</span> : null}
                     </button>
-                    <button type="button" className="btn tiny" onClick={() => void previewCode(ref)}>
-                      Peek
-                    </button>
+                    <Button label="Peek" variant="secondary" size="sm" onClick={() => void previewCode(ref)} />
                   </div>
                 ))
               ) : (
@@ -398,9 +382,7 @@ export function Inspector({
                 <div className="code-peek">
                   <div className="code-peek-head">
                     <code>{code.path}</code>
-                    <button type="button" className="icon-btn" onClick={() => setCode(null)} aria-label="Close code preview">
-                      ×
-                    </button>
+                    <IconButton label="Close code preview" icon={<span aria-hidden="true">×</span>} variant="ghost" size="sm" onClick={() => setCode(null)} />
                   </div>
                   <pre>{code.content}</pre>
                 </div>
@@ -444,12 +426,8 @@ export function Inspector({
               </div>
             ) : null}
             <div className="inspector-actions">
-              <button type="button" className="btn primary" onClick={() => void askAgent()}>
-                Ask agent about this
-              </button>
-              <button type="button" className={classNames('btn', isLocked ? 'subtle' : 'subtle')} onClick={() => void onLock(node.id, !isLocked)}>
-                {isLocked ? 'Unlock node' : 'Lock node'}
-              </button>
+              <Button label="Ask agent about this" variant="primary" onClick={() => void askAgent()} />
+              <Button label={isLocked ? 'Unlock node' : 'Lock node'} variant="secondary" onClick={() => void onLock(node.id, !isLocked)} />
             </div>
           </>
         )}

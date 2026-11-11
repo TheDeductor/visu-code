@@ -1,4 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { Button } from '@astryxdesign/core/Button';
+import { IconButton } from '@astryxdesign/core/IconButton';
 import type { NodeKind, NodeStatus, ProjectConfig } from '@core/types';
 import { EDGE_KINDS, NODE_KINDS, NODE_STATUSES } from '@core/types';
 import { api, type ProjectInfo, type SearchResult } from '../api';
@@ -26,13 +28,11 @@ export function NewMapModal({
       onClose={onClose}
       footer={
         <>
-          <button type="button" className="btn subtle" onClick={onClose}>
-            Cancel
-          </button>
-          <button
-            type="button"
-            className="btn primary"
-            disabled={!valid || busy}
+          <Button label="Cancel" variant="ghost" onClick={onClose} />
+          <Button
+            label={busy ? 'Creating…' : 'Create map'}
+            variant="primary"
+            isDisabled={!valid || busy}
             onClick={() => {
               setBusy(true);
               setError(null);
@@ -41,9 +41,7 @@ export function NewMapModal({
                 .catch((err) => setError((err as Error).message))
                 .finally(() => setBusy(false));
             }}
-          >
-            {busy ? 'Creating…' : 'Create map'}
-          </button>
+          />
         </>
       }
     >
@@ -102,13 +100,11 @@ export function AddNodeModal({
       onClose={onClose}
       footer={
         <>
-          <button type="button" className="btn subtle" onClick={onClose}>
-            Cancel
-          </button>
-          <button
-            type="button"
-            className="btn primary"
-            disabled={!label.trim() || busy}
+          <Button label="Cancel" variant="ghost" onClick={onClose} />
+          <Button
+            label={busy ? 'Adding…' : 'Add node'}
+            variant="primary"
+            isDisabled={!label.trim() || busy}
             onClick={() => {
               setBusy(true);
               setError(null);
@@ -117,9 +113,7 @@ export function AddNodeModal({
                 .catch((err) => setError((err as Error).message))
                 .finally(() => setBusy(false));
             }}
-          >
-            {busy ? 'Adding…' : 'Add node'}
-          </button>
+          />
         </>
       }
     >
@@ -180,13 +174,11 @@ export function EdgeModal({
       onClose={onClose}
       footer={
         <>
-          <button type="button" className="btn subtle" onClick={onClose}>
-            Cancel
-          </button>
-          <button
-            type="button"
-            className="btn primary"
-            disabled={busy}
+          <Button label="Cancel" variant="ghost" onClick={onClose} />
+          <Button
+            label={busy ? 'Connecting…' : 'Add edge'}
+            variant="primary"
+            isDisabled={busy}
             onClick={() => {
               setBusy(true);
               setError(null);
@@ -195,9 +187,7 @@ export function EdgeModal({
                 .catch((err) => setError((err as Error).message))
                 .finally(() => setBusy(false));
             }}
-          >
-            {busy ? 'Connecting…' : 'Add edge'}
-          </button>
+          />
         </>
       }
     >
@@ -238,20 +228,16 @@ export function StickyModal({
       onClose={onClose}
       footer={
         <>
-          <button type="button" className="btn subtle" onClick={onClose}>
-            Cancel
-          </button>
-          <button
-            type="button"
-            className="btn primary"
-            disabled={!text.trim() || busy}
+          <Button label="Cancel" variant="ghost" onClick={onClose} />
+          <Button
+            label={busy ? 'Adding…' : 'Add note'}
+            variant="primary"
+            isDisabled={!text.trim() || busy}
             onClick={() => {
               setBusy(true);
               void onCreate(text.trim()).then(onClose).finally(() => setBusy(false));
             }}
-          >
-            {busy ? 'Adding…' : 'Add note'}
-          </button>
+          />
         </>
       }
     >
@@ -282,13 +268,11 @@ export function SettingsModal({
       onClose={onClose}
       footer={
         <>
-          <button type="button" className="btn subtle" onClick={onClose}>
-            Close
-          </button>
-          <button
-            type="button"
-            className="btn primary"
-            disabled={busy}
+          <Button label="Close" variant="ghost" onClick={onClose} />
+          <Button
+            label={busy ? 'Saving…' : 'Save'}
+            variant="primary"
+            isDisabled={busy}
             onClick={() => {
               setBusy(true);
               void onSave({ mode, granularity }).finally(() => {
@@ -296,9 +280,7 @@ export function SettingsModal({
                 onClose();
               });
             }}
-          >
-            {busy ? 'Saving…' : 'Save'}
-          </button>
+          />
         </>
       }
     >
@@ -420,17 +402,15 @@ export function TourModal({ onClose }: { onClose: () => void }): React.ReactElem
       onClose={onClose}
       footer={
         <>
-          <button type="button" className="btn subtle" onClick={onClose}>
-            Skip
-          </button>
+          <Button label="Skip" variant="ghost" onClick={onClose} />
           {step > 0 ? (
-            <button type="button" className="btn subtle" onClick={() => setStep(step - 1)}>
-              Back
-            </button>
+            <Button label="Back" variant="ghost" onClick={() => setStep(step - 1)} />
           ) : null}
-          <button type="button" className="btn primary" onClick={() => (step === steps.length - 1 ? onClose() : setStep(step + 1))}>
-            {step === steps.length - 1 ? 'Start mapping' : 'Next'}
-          </button>
+          <Button
+            label={step === steps.length - 1 ? 'Start mapping' : 'Next'}
+            variant="primary"
+            onClick={() => (step === steps.length - 1 ? onClose() : setStep(step + 1))}
+          />
         </>
       }
     >
@@ -462,18 +442,15 @@ export function PromptModal({
       wide
       footer={
         <>
-          <button type="button" className="btn subtle" onClick={onClose}>
-            Close
-          </button>
-          <button
-            type="button"
-            className="btn primary"
+          <Button label="Close" variant="ghost" onClick={onClose} />
+          <Button
+            label="Copy prompt"
+            variant="secondary"
+            size="sm"
             onClick={() => {
               void copyText(prompt).then(onCopied);
             }}
-          >
-            Copy prompt
-          </button>
+          />
         </>
       }
     >

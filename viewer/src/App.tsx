@@ -1,4 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Button } from '@astryxdesign/core/Button';
+import { IconButton } from '@astryxdesign/core/IconButton';
 import type {
   ChangeEntry,
   CheckReport,
@@ -1112,15 +1114,9 @@ export function App(): React.ReactElement {
                 title="Turn this project into a map"
                 actions={
                   <>
-                    <button type="button" className="btn primary" onClick={() => void bootstrap()}>
-                      Copy bootstrap prompt
-                    </button>
-                    <button type="button" className="btn" onClick={() => setModal({ kind: 'prompt', title: 'Plan-first prompt', prompt: PLAN_PROMPT })}>
-                      Plan-first prompt
-                    </button>
-                    <button type="button" className="btn subtle" onClick={() => setModal({ kind: 'new-map' })}>
-                      Draw by hand
-                    </button>
+                    <Button label="Copy bootstrap prompt" variant="primary" onClick={() => void bootstrap()} />
+                    <Button label="Plan-first prompt" variant="secondary" onClick={() => setModal({ kind: 'prompt', title: 'Plan-first prompt', prompt: PLAN_PROMPT })} />
+                    <Button label="Draw by hand" variant="ghost" onClick={() => setModal({ kind: 'new-map' })} />
                   </>
                 }
               >
@@ -1135,21 +1131,15 @@ export function App(): React.ReactElement {
               {pendingDetail ? (
                 <div className="banner banner-warn">
                   <span>{pendingDetail.message}</span>
-                  <button type="button" className="btn tiny" onClick={applyPendingDetail}>
-                    Apply update
-                  </button>
-                  <button type="button" className="icon-btn" onClick={() => setPendingDetail(null)} aria-label="Dismiss">
-                    ×
-                  </button>
+                  <Button label="Apply update" variant="secondary" size="sm" onClick={applyPendingDetail} />
+                  <IconButton label="Dismiss" icon={<span aria-hidden="true">×</span>} variant="ghost" size="sm" onClick={() => setPendingDetail(null)} />
                 </div>
               ) : null}
               {detail?.error ? (
                 <div className="banner banner-error">
                   <strong>Map has an error{detail.error.issues[0]?.line ? ` at line ${detail.error.issues[0].line}` : ''}.</strong>
                   <span> Showing the last good version.</span>
-                  <button type="button" className="btn tiny" onClick={() => setBottom('problems')}>
-                    View problem
-                  </button>
+                  <Button label="View problem" variant="secondary" size="sm" onClick={() => setBottom('problems')} />
                 </div>
               ) : null}
               {historical ? (
@@ -1157,12 +1147,8 @@ export function App(): React.ReactElement {
                   <span>
                     Viewing history: <strong>{historical.point.summary}</strong> · {new Date(historical.point.ts).toLocaleString()}
                   </span>
-                  <button type="button" className="btn tiny" onClick={() => void openDiff(historical.rev, historical.point.summary)}>
-                    Compare with now
-                  </button>
-                  <button type="button" className="btn tiny subtle" onClick={() => setHistorical(null)}>
-                    Back to now
-                  </button>
+                  <Button label="Compare with now" variant="secondary" size="sm" onClick={() => void openDiff(historical.rev, historical.point.summary)} />
+                  <Button label="Back to now" variant="ghost" size="sm" onClick={() => setHistorical(null)} />
                 </div>
               ) : null}
               {diffData ? (
@@ -1170,17 +1156,13 @@ export function App(): React.ReactElement {
                   <span>
                     Comparing <strong>{diffData.baseLabel}</strong> → now. <span className="muted">[ / ] steps through changed nodes.</span>
                   </span>
-                  <button type="button" className="btn tiny subtle" onClick={() => setDiffData(null)}>
-                    Exit diff
-                  </button>
+                  <Button label="Exit diff" variant="ghost" size="sm" onClick={() => setDiffData(null)} />
                 </div>
               ) : null}
               {phaseFilter ? (
                 <div className="banner banner-info">
                   <span>Showing phase <strong>{phaseFilter}</strong></span>
-                  <button type="button" className="btn tiny subtle" onClick={() => setPhaseFilter(null)}>
-                    Clear filter
-                  </button>
+                  <Button label="Clear filter" variant="ghost" size="sm" onClick={() => setPhaseFilter(null)} />
                 </div>
               ) : null}
               <div className="canvas-host">
@@ -1211,28 +1193,19 @@ export function App(): React.ReactElement {
                 )}
                 {canEdit ? (
                   <div className="edit-toolbar" role="toolbar" aria-label="Edit tools">
-                    <button type="button" className="btn small" onClick={() => setModal({ kind: 'add-node' })}>
-                      + Node
-                    </button>
-                    <button
-                      type="button"
-                      className={classNames('btn small', connectMode && 'active')}
+                    <Button label="+ Node" variant="secondary" size="sm" onClick={() => setModal({ kind: 'add-node' })} />
+                    <Button
+                      label="Connect"
+                      variant={connectMode ? 'primary' : 'secondary'}
+                      size="sm"
                       onClick={() => {
                         setConnectMode((value) => !value);
                         setConnectFrom(null);
                       }}
-                    >
-                      Connect
-                    </button>
-                    <button type="button" className="btn small" onClick={() => setModal({ kind: 'sticky' })}>
-                      Sticky
-                    </button>
-                    <button type="button" className="btn small subtle" onClick={resetLayout}>
-                      Reset layout
-                    </button>
-                    <button type="button" className="btn small subtle" onClick={() => setMode('view')}>
-                      Done
-                    </button>
+                    />
+                    <Button label="Sticky" variant="secondary" size="sm" onClick={() => setModal({ kind: 'sticky' })} />
+                    <Button label="Reset layout" variant="ghost" size="sm" onClick={resetLayout} />
+                    <Button label="Done" variant="ghost" size="sm" onClick={() => setMode('view')} />
                   </div>
                 ) : null}
                 {walkthrough.active && currentWalkthrough ? (
@@ -1242,18 +1215,10 @@ export function App(): React.ReactElement {
                     </div>
                     <p>{currentWalkthrough.text}</p>
                     <div className="walkthrough-actions">
-                      <button type="button" className="icon-btn" onClick={() => setWalkthrough((current) => ({ ...current, playing: false, index: Math.max(0, current.index - 1) }))} aria-label="Previous step">
-                        ‹
-                      </button>
-                      <button type="button" className="btn small" onClick={() => setWalkthrough((current) => ({ ...current, playing: !current.playing }))}>
-                        {walkthrough.playing ? 'Pause' : 'Play'}
-                      </button>
-                      <button type="button" className="icon-btn" onClick={() => setWalkthrough((current) => ({ ...current, playing: false, index: Math.min((viewDetail?.map.type === 'graph' ? viewDetail.map.walkthrough?.length ?? 1 : 1) - 1, current.index + 1) }))} aria-label="Next step">
-                        ›
-                      </button>
-                      <button type="button" className="btn small subtle" onClick={() => setWalkthrough({ active: false, index: 0, playing: false })}>
-                        Close
-                      </button>
+                      <IconButton label="Previous step" icon={<span aria-hidden="true">‹</span>} variant="ghost" size="sm" onClick={() => setWalkthrough((current) => ({ ...current, playing: false, index: Math.max(0, current.index - 1) }))} />
+                      <Button label={walkthrough.playing ? 'Pause' : 'Play'} variant="secondary" size="sm" onClick={() => setWalkthrough((current) => ({ ...current, playing: !current.playing }))} />
+                      <IconButton label="Next step" icon={<span aria-hidden="true">›</span>} variant="ghost" size="sm" onClick={() => setWalkthrough((current) => ({ ...current, playing: false, index: Math.min((viewDetail?.map.type === 'graph' ? viewDetail.map.walkthrough?.length ?? 1 : 1) - 1, current.index + 1) }))} />
+                      <Button label="Close" variant="ghost" size="sm" onClick={() => setWalkthrough({ active: false, index: 0, playing: false })} />
                     </div>
                   </div>
                 ) : null}
@@ -1269,9 +1234,7 @@ export function App(): React.ReactElement {
                         Activity
                       </button>
                     </div>
-                    <button type="button" className="icon-btn" onClick={() => setBottom(null)} aria-label="Close panel">
-                      ×
-                    </button>
+                    <IconButton label="Close panel" icon={<span aria-hidden="true">×</span>} variant="ghost" size="sm" onClick={() => setBottom(null)} />
                   </div>
                   <div className="bottom-body">
                     {bottom === 'problems' ? (

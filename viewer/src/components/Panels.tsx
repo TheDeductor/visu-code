@@ -1,4 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { Button } from '@astryxdesign/core/Button';
+import { IconButton } from '@astryxdesign/core/IconButton';
 import type { ChangeEntry, CheckReport, CoverageReport, HistoryPoint, Issue, MapSummary, Phase, Suggestion } from '@core/types';
 import { api, type NoteEntry, type PhaseProgress } from '../api';
 import { Badge, EmptyState, ProgressBar, Spinner } from './ui';
@@ -57,13 +59,9 @@ export function ChangesPanel({
               <h2>{selected.title}</h2>
             </div>
             <div className="change-detail-actions">
-              <button type="button" className="btn small" onClick={() => onDiff(selected)}>
-                View diff
-              </button>
+              <Button label="View diff" variant="secondary" size="sm" onClick={() => onDiff(selected)} />
               {selected.maps[0] ? (
-                <button type="button" className="btn small subtle" onClick={() => onOpenMap(selected.maps[0]!)}>
-                  Open map
-                </button>
+                <Button label="Open map" variant="ghost" size="sm" onClick={() => onOpenMap(selected.maps[0]!)} />
               ) : null}
             </div>
           </header>
@@ -127,12 +125,8 @@ export function TimelinePanel({
         </div>
         {selectedRev ? (
           <div className="timeline-actions">
-            <button type="button" className="btn small" onClick={() => onDiff(history.find((h) => h.rev === selectedRev) ?? history[0]!)}>
-              Compare with now
-            </button>
-            <button type="button" className="btn small subtle" onClick={onBack}>
-              Back to now
-            </button>
+            <Button label="Compare with now" variant="secondary" size="sm" onClick={() => onDiff(history.find((h) => h.rev === selectedRev) ?? history[0]!)} />
+            <Button label="Back to now" variant="ghost" size="sm" onClick={onBack} />
           </div>
         ) : null}
       </header>
@@ -212,9 +206,7 @@ export function PhasesPanel({
           }}
         >
           <input value={title} onChange={(event) => setTitle(event.target.value)} placeholder="New phase title" />
-          <button type="submit" className="btn small">
-            Add phase
-          </button>
+          <Button label="Add phase" type="submit" variant="secondary" size="sm" />
         </form>
       </header>
       {!phases.length ? <EmptyState icon="◇" title="No phases yet" ><p>Create a phase to group work, or ask your agent to plan one.</p></EmptyState> : null}
@@ -238,23 +230,15 @@ export function PhasesPanel({
               </div>
               <div className="phase-actions">
                 {phase.status !== 'active' && phase.status !== 'done' ? (
-                  <button type="button" className="btn small" onClick={() => onStart(phase.id)}>
-                    Start
-                  </button>
+                  <Button label="Start" variant="secondary" size="sm" onClick={() => onStart(phase.id)} />
                 ) : null}
                 {phase.status !== 'done' ? (
-                  <button type="button" className="btn small subtle" onClick={() => onDone(phase.id)}>
-                    Finish
-                  </button>
+                  <Button label="Finish" variant="ghost" size="sm" onClick={() => onDone(phase.id)} />
                 ) : null}
                 {phase.snapshot ? (
-                  <button type="button" className="btn small subtle" onClick={() => onSnapshot(phase)}>
-                    View snapshot
-                  </button>
+                  <Button label="View snapshot" variant="ghost" size="sm" onClick={() => onSnapshot(phase)} />
                 ) : null}
-                <button type="button" className="btn small ghost" onClick={() => onFilter(phase.id)}>
-                  Show only this phase
-                </button>
+                <Button label="Show only this phase" variant="ghost" size="sm" onClick={() => onFilter(phase.id)} />
               </div>
             </article>
           );
@@ -431,9 +415,7 @@ export function NotesPanel({
       <div className="notes-list">
         <div className="notes-list-head">
           <strong>Notes</strong>
-          <button type="button" className="icon-btn" onClick={() => void createNote()} title="New note" aria-label="New note">
-            +
-          </button>
+          <IconButton label="New note" tooltip="New note" icon={<span aria-hidden="true">+</span>} variant="ghost" size="sm" onClick={() => void createNote()} />
         </div>
         {notes.map((item) => (
           <button key={item.path} type="button" className={classNames('note-row', current === item.path && 'active')} onClick={() => setSelected(item.path)}>
@@ -454,17 +436,11 @@ export function NotesPanel({
               <div className="change-detail-actions">
                 {editing ? (
                   <>
-                    <button type="button" className="btn small primary" onClick={() => void save()} disabled={busy}>
-                      {busy ? 'Saving…' : 'Save'}
-                    </button>
-                    <button type="button" className="btn small subtle" onClick={() => setEditing(false)}>
-                      Cancel
-                    </button>
+                    <Button label={busy ? 'Saving…' : 'Save'} variant="primary" size="sm" isDisabled={busy} onClick={() => void save()} />
+                    <Button label="Cancel" variant="ghost" size="sm" onClick={() => setEditing(false)} />
                   </>
                 ) : (
-                  <button type="button" className="btn small" onClick={() => setEditing(true)}>
-                    Edit
-                  </button>
+                  <Button label="Edit" variant="secondary" size="sm" onClick={() => setEditing(true)} />
                 )}
               </div>
             </header>
@@ -546,9 +522,7 @@ export function CoveragePanel({
                   <strong>{suggestion.title}</strong>
                   {suggestion.file ? <code>{suggestion.file}{suggestion.line ? `:${suggestion.line}` : ''}</code> : null}
                 </div>
-                <button type="button" className="btn tiny" onClick={() => onCopy(suggestion.prompt, 'Prompt copied')}>
-                  Copy prompt
-                </button>
+                <Button label="Copy prompt" variant="secondary" size="sm" onClick={() => onCopy(suggestion.prompt, 'Prompt copied')} />
               </div>
             ))
           ) : (
@@ -576,9 +550,7 @@ export function CoveragePanel({
           {coverage.unmapped.slice(0, 120).map((file) => (
             <div key={file} className="unmapped-row">
               <code>{file}</code>
-              <button type="button" className="btn tiny" onClick={() => onCopy(promptForFile(file), 'Prompt copied')}>
-                Copy prompt
-              </button>
+              <Button label="Copy prompt" variant="secondary" size="sm" onClick={() => onCopy(promptForFile(file), 'Prompt copied')} />
             </div>
           ))}
         </div>
@@ -598,18 +570,15 @@ export function ProblemsPanel({ report, onOpenIssue, onRunCheck }: { report: Che
           <span className="muted"> · {report.warnings.length} warnings · {report.stats.nodes} nodes · {report.stats.verified} verified</span>
         </div>
         <div>
-          <button type="button" className="btn tiny" onClick={onRunCheck}>
-            Run check
-          </button>
-          <button
-            type="button"
-            className="btn tiny subtle"
+          <Button label="Run check" variant="secondary" size="sm" onClick={onRunCheck} />
+          <Button
+            label="Copy JSON"
+            variant="ghost"
+            size="sm"
             onClick={() => {
               void copyText(JSON.stringify(report, null, 2));
             }}
-          >
-            Copy JSON
-          </button>
+          />
         </div>
       </div>
       {!issues.length ? <p className="problems-empty">✓ No problems. Maps are valid and evidence resolves.</p> : null}

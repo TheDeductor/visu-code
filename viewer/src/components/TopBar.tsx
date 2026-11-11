@@ -1,4 +1,6 @@
 import React from 'react';
+import { Button } from '@astryxdesign/core/Button';
+import { IconButton } from '@astryxdesign/core/IconButton';
 import type { CheckReport, MapSummary, ViewerTab } from '@core/types';
 import type { MapDetail, ProjectInfo } from '../api';
 import { classNames } from '../util';
@@ -81,9 +83,7 @@ export function TopBar({
         ))}
       </nav>
       <div className="topbar-actions">
-        <button type="button" className="icon-btn" onClick={onSearch} title="Search (Ctrl/Cmd+K)" aria-label="Search">
-          ⌕
-        </button>
+        <IconButton label="Search (Ctrl/Cmd+K)" tooltip="Search (Ctrl/Cmd+K)" icon={<span aria-hidden="true">⌕</span>} variant="ghost" size="sm" onClick={onSearch} />
         <button type="button" className={classNames('check-pill', errors ? 'has-errors' : warnings ? 'has-warnings' : 'is-ok')} onClick={onProblems} title="Validation problems">
           {errors ? `${errors} error${errors === 1 ? '' : 's'}` : warnings ? `${warnings} warning${warnings === 1 ? '' : 's'}` : 'check ok'}
           {problemsOpen ? ' ▾' : ' ▸'}
@@ -101,33 +101,17 @@ export function TopBar({
           </button>
         </div>
         <div className="menu-wrap">
-          <button type="button" className="icon-btn" title="Export" aria-label="Export menu">
-            ⇩
-          </button>
+          <IconButton label="Export menu" tooltip="Export" icon={<span aria-hidden="true">⇩</span>} variant="ghost" size="sm" />
           <div className="menu">
-            <button type="button" onClick={() => onExport('svg')}>
-              Export SVG
-            </button>
-            <button type="button" onClick={() => onExport('mermaid')}>
-              Export Mermaid
-            </button>
-            <button type="button" onClick={() => onExport('md')}>
-              Export Markdown
-            </button>
-            <button type="button" onClick={() => onExport('excalidraw')}>
-              Export Excalidraw
-            </button>
+            <Button label="Export SVG" variant="ghost" size="sm" onClick={() => onExport('svg')} />
+            <Button label="Export Mermaid" variant="ghost" size="sm" onClick={() => onExport('mermaid')} />
+            <Button label="Export Markdown" variant="ghost" size="sm" onClick={() => onExport('md')} />
+            <Button label="Export Excalidraw" variant="ghost" size="sm" onClick={() => onExport('excalidraw')} />
           </div>
         </div>
-        <button type="button" className="icon-btn" onClick={onRefresh} title="Refresh from disk" aria-label="Refresh">
-          ↻
-        </button>
-        <button type="button" className="icon-btn" onClick={onHelp} title="Keyboard shortcuts (?)" aria-label="Help">
-          ?
-        </button>
-        <button type="button" className="icon-btn" onClick={onSettings} title="Settings" aria-label="Settings">
-          ⚙
-        </button>
+        <IconButton label="Refresh" tooltip="Refresh from disk" icon={<span aria-hidden="true">↻</span>} variant="ghost" size="sm" onClick={onRefresh} />
+        <IconButton label="Help" tooltip="Keyboard shortcuts (?)" icon={<span aria-hidden="true">?</span>} variant="ghost" size="sm" onClick={onHelp} />
+        <IconButton label="Settings" tooltip="Settings" icon={<span aria-hidden="true">⚙</span>} variant="ghost" size="sm" onClick={onSettings} />
       </div>
     </header>
   );
