@@ -3,6 +3,7 @@ import { Dialog, DialogHeader } from '@astryxdesign/core/Dialog';
 import { Badge as AstryxBadge } from '@astryxdesign/core/Badge';
 import { IconButton } from '@astryxdesign/core/IconButton';
 import { Toast as AstryxToast } from '@astryxdesign/core/Toast';
+import { ProgressBar as AstryxProgressBar } from '@astryxdesign/core/ProgressBar';
 import { classNames } from '../util';
 
 export function Modal({
@@ -114,9 +115,16 @@ export function Toast({ message, tone = 'info', onClose }: { message: string; to
 }
 
 export function ProgressBar({ percent, tone = 'info' }: { percent: number; tone?: 'info' | 'warn' | 'error' | 'ok' }): React.ReactElement {
+  const variant = tone === 'ok' ? 'success' : tone === 'warn' ? 'warning' : tone === 'error' ? 'error' : 'accent';
   return (
-    <div className="progress" aria-label={`${percent}%`}>
-      <span className={`progress-fill progress-${tone}`} style={{ width: `${Math.min(100, Math.max(0, percent))}%` }} />
+    <div className="progress-wrap" style={{ width: '100%' }}>
+      <AstryxProgressBar
+        value={Math.min(100, Math.max(0, percent))}
+        max={100}
+        label="Progress"
+        isLabelHidden
+        variant={variant}
+      />
     </div>
   );
 }

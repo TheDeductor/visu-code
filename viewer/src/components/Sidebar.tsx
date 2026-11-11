@@ -2,7 +2,7 @@ import React, { useMemo } from 'react';
 import { IconButton } from '@astryxdesign/core/IconButton';
 import { TextInput } from '@astryxdesign/core/TextInput';
 import type { MapSummary } from '@core/types';
-import { Badge } from './ui';
+import { Badge, ProgressBar } from './ui';
 import { classNames, mapFolder, mapIcon, mapLeaf } from '../util';
 
 export function Sidebar({
@@ -104,9 +104,7 @@ export function Sidebar({
             <span>Coverage</span>
             <strong>{coverage === undefined ? '—' : `${coverage}%`}</strong>
           </div>
-          <div className="progress">
-            <span className="progress-fill progress-info" style={{ width: `${coverage ?? 0}%` }} />
-          </div>
+          <ProgressBar percent={coverage ?? 0} tone="info" />
         </div>
         <button type="button" className="ghost-link" onClick={onBootstrap}>
           Paste bootstrap prompt into an agent
