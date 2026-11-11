@@ -1,6 +1,7 @@
 import React from 'react';
 import { Button } from '@astryxdesign/core/Button';
 import { IconButton } from '@astryxdesign/core/IconButton';
+import { Tab, TabList } from '@astryxdesign/core/TabList';
 import type { CheckReport, MapSummary, ViewerTab } from '@core/types';
 import type { MapDetail, ProjectInfo } from '../api';
 import { classNames } from '../util';
@@ -75,13 +76,11 @@ export function TopBar({
           </span>
         </div>
       </div>
-      <nav className="tabs" aria-label="Viewer sections">
+      <TabList value={tab} onChange={(val) => onTab(val as ViewerTab)} size="sm">
         {TABS.map((item) => (
-          <button key={item.id} type="button" className={classNames('tab', tab === item.id && 'active')} onClick={() => onTab(item.id)} title={`${item.label} (G then ${item.key})`}>
-            {item.label}
-          </button>
+          <Tab key={item.id} value={item.id} label={item.label} />
         ))}
-      </nav>
+      </TabList>
       <div className="topbar-actions">
         <IconButton label="Search (Ctrl/Cmd+K)" tooltip="Search (Ctrl/Cmd+K)" icon={<span aria-hidden="true">⌕</span>} variant="ghost" size="sm" onClick={onSearch} />
         <button type="button" className={classNames('check-pill', errors ? 'has-errors' : warnings ? 'has-warnings' : 'is-ok')} onClick={onProblems} title="Validation problems">

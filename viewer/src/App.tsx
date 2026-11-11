@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Button } from '@astryxdesign/core/Button';
 import { IconButton } from '@astryxdesign/core/IconButton';
+import { Tab, TabList } from '@astryxdesign/core/TabList';
 import type {
   ChangeEntry,
   CheckReport,
@@ -1226,14 +1227,10 @@ export function App(): React.ReactElement {
               {bottom ? (
                 <div className="bottom-panel">
                   <div className="bottom-head">
-                    <div className="bottom-tabs">
-                      <button type="button" className={bottom === 'problems' ? 'active' : ''} onClick={() => setBottom('problems')}>
-                        Problems {check ? `(${check.errors.length + check.warnings.length})` : ''}
-                      </button>
-                      <button type="button" className={bottom === 'activity' ? 'active' : ''} onClick={() => setBottom('activity')}>
-                        Activity
-                      </button>
-                    </div>
+                    <TabList value={bottom} onChange={(val) => setBottom(val as 'problems' | 'activity')} size="sm">
+                      <Tab value="problems" label={`Problems ${check ? `(${check.errors.length + check.warnings.length})` : ''}`} />
+                      <Tab value="activity" label="Activity" />
+                    </TabList>
                     <IconButton label="Close panel" icon={<span aria-hidden="true">×</span>} variant="ghost" size="sm" onClick={() => setBottom(null)} />
                   </div>
                   <div className="bottom-body">
