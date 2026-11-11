@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Button } from '@astryxdesign/core/Button';
 import { IconButton } from '@astryxdesign/core/IconButton';
 import { Token } from '@astryxdesign/core/Token';
+import { Card } from '@astryxdesign/core/Card';
 import type { ChangeEntry, CheckReport, CoverageReport, HistoryPoint, Issue, MapSummary, Phase, Suggestion } from '@core/types';
 import { api, type NoteEntry, type PhaseProgress } from '../api';
 import { Badge, EmptyState, ProgressBar, Spinner } from './ui';
@@ -213,7 +214,7 @@ export function PhasesPanel({
         {phases.map((phase) => {
           const percent = phase.total ? Math.round((phase.built / phase.total) * 100) : 0;
           return (
-            <article key={phase.id} className={classNames('phase-card', `phase-${phase.status}`)}>
+            <Card key={phase.id} className={classNames('phase-card', `phase-${phase.status}`)} padding={3}>
               <header>
                 <div>
                   <span className="eyebrow">{phase.id}</span>
@@ -239,7 +240,7 @@ export function PhasesPanel({
                 ) : null}
                 <Button label="Show only this phase" variant="ghost" size="sm" onClick={() => onFilter(phase.id)} />
               </div>
-            </article>
+            </Card>
           );
         })}
       </div>
@@ -487,18 +488,20 @@ export function CoveragePanel({
   if (!coverage) return <EmptyState title="Coverage is unavailable" />;
   return (
     <div className="coverage-panel">
-      <header className="coverage-head">
-        <div>
-          <span className="eyebrow">Ground truth</span>
-          <h2>{coverage.percent}% coverage</h2>
-          <p className="muted">
-            {coverage.coveredFiles} of {coverage.totalFiles} source files are referenced by at least one map. Target {coverage.target}%.
-          </p>
-        </div>
-        <div className="coverage-ring" style={{ background: `conic-gradient(var(--accent) ${coverage.percent * 3.6}deg, var(--line) 0)` }}>
-          <span>{coverage.percent}%</span>
-        </div>
-      </header>
+      <Card padding={4} style={{ marginBottom: '16px' }}>
+        <header className="coverage-head" style={{ padding: 0, border: 'none' }}>
+          <div>
+            <span className="eyebrow">Ground truth</span>
+            <h2>{coverage.percent}% coverage</h2>
+            <p className="muted">
+              {coverage.coveredFiles} of {coverage.totalFiles} source files are referenced by at least one map. Target {coverage.target}%.
+            </p>
+          </div>
+          <div className="coverage-ring" style={{ background: `conic-gradient(var(--accent) ${coverage.percent * 3.6}deg, var(--line) 0)` }}>
+            <span>{coverage.percent}%</span>
+          </div>
+        </header>
+      </Card>
       <div className="coverage-grid">
         <section>
           <h3>By directory</h3>

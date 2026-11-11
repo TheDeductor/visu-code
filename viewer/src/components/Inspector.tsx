@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Button } from '@astryxdesign/core/Button';
 import { IconButton } from '@astryxdesign/core/IconButton';
+import { Card } from '@astryxdesign/core/Card';
 import type { ChangeEntry, CodeRef, NodeKind, NodeStatus, VibeNode } from '@core/types';
 import { NODE_KINDS, NODE_STATUSES } from '@core/types';
 import { kindLabel } from '@core/theme';
@@ -112,22 +113,22 @@ export function Inspector({
           </div>
           <p className="map-summary">{map.summary || 'No summary yet. Ask an agent to add one.'}</p>
           <div className="stat-grid">
-            <div>
+            <Card padding={2}>
               <strong>{nodes.length}</strong>
               <span>{map.type === 'erd' ? 'entities' : 'nodes'}</span>
-            </div>
-            <div>
+            </Card>
+            <Card padding={2}>
               <strong>{map.type === 'graph' ? map.edges.length : map.type === 'sequence' ? map.steps.length : map.type === 'erd' ? map.relations.length : 0}</strong>
               <span>edges</span>
-            </div>
-            <div>
+            </Card>
+            <Card padding={2}>
               <strong>{detail.issues.errors.length}</strong>
               <span>errors</span>
-            </div>
-            <div>
+            </Card>
+            <Card padding={2}>
               <strong>{detail.locked.length}</strong>
               <span>locked</span>
-            </div>
+            </Card>
           </div>
           {map.type === 'graph' ? (
             <>
@@ -356,10 +357,12 @@ export function Inspector({
           <>
             <p className={classNames('node-description', beginner && node.plain && 'plain')}>{beginner ? node.plain ?? node.description ?? 'No plain-language note yet.' : node.description ?? 'No description yet.'}</p>
             {!beginner && node.plain ? (
-              <div className="plain-note">
-                <span>Plain language</span>
-                <p>{node.plain}</p>
-              </div>
+              <Card variant="muted" padding={2}>
+                <div className="plain-note" style={{ border: 'none', background: 'transparent', padding: 0 }}>
+                  <span>Plain language</span>
+                  <p>{node.plain}</p>
+                </div>
+              </Card>
             ) : null}
             <div className="inspector-section">
               <div className="section-title">Code refs</div>
