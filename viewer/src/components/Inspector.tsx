@@ -24,6 +24,7 @@ export function Inspector({
   onStartWalkthrough,
   onOpenNotes,
   onToast,
+  onCollapse,
 }: {
   detail: MapDetail | null;
   selectedNodeId: string | null;
@@ -37,6 +38,7 @@ export function Inspector({
   onStartWalkthrough: () => void;
   onOpenNotes: () => void;
   onToast: (message: string, tone?: 'info' | 'ok' | 'error' | 'warn') => void;
+  onCollapse?: () => void;
 }): React.ReactElement {
   const graph = detail?.map.type === 'graph' ? detail.map : null;
   const node = graph?.nodes.find((n) => n.id === selectedNodeId) ?? null;
@@ -87,6 +89,12 @@ export function Inspector({
   if (!detail) {
     return (
       <aside className="inspector" aria-label="Inspector">
+        <div className="inspector-head" style={{ padding: '12px' }}>
+          <span className="eyebrow">Inspector</span>
+          {onCollapse && (
+            <IconButton label="Collapse inspector" tooltip="Collapse inspector" icon={<span aria-hidden="true">»</span>} variant="ghost" size="sm" onClick={onCollapse} />
+          )}
+        </div>
         <div className="inspector-placeholder">
           <p>Select a map to inspect it.</p>
         </div>
@@ -112,6 +120,9 @@ export function Inspector({
               <span className="eyebrow">{map.type.toUpperCase()}</span>
               <h2>{map.title}</h2>
             </div>
+            {onCollapse && (
+              <IconButton label="Collapse inspector" tooltip="Collapse inspector" icon={<span aria-hidden="true">»</span>} variant="ghost" size="sm" onClick={onCollapse} />
+            )}
           </div>
           <p className="map-summary">{map.summary || 'No summary yet. Ask an agent to add one.'}</p>
           <div className="stat-grid">
@@ -289,7 +300,12 @@ export function Inspector({
             </span>
             <h2>{node.label}</h2>
           </div>
-          <IconButton label="Clear selection" icon={<span aria-hidden="true">×</span>} variant="ghost" size="sm" onClick={() => onSelectNode('')} />
+          <div style={{ display: 'flex', gap: '4px' }}>
+            <IconButton label="Clear selection" tooltip="Clear selection" icon={<span aria-hidden="true">×</span>} variant="ghost" size="sm" onClick={() => onSelectNode('')} />
+            {onCollapse && (
+              <IconButton label="Collapse inspector" tooltip="Collapse inspector" icon={<span aria-hidden="true">»</span>} variant="ghost" size="sm" onClick={onCollapse} />
+            )}
+          </div>
         </div>
         <div className="inspector-badges">
           <Badge tone={evidenceTone}>{evidence?.status ?? 'declared'}</Badge>

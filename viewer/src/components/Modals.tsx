@@ -257,10 +257,14 @@ export function SettingsModal({
   project,
   onClose,
   onSave,
+  themeMode,
+  onThemeChange,
 }: {
   project: ProjectInfo;
   onClose: () => void;
   onSave: (body: { mode?: string; granularity?: string }) => Promise<void>;
+  themeMode?: 'light' | 'dark';
+  onThemeChange?: (mode: 'light' | 'dark') => void;
 }): React.ReactElement {
   const [mode, setMode] = useState<ProjectConfig['tracking']['mode']>(project.config.tracking.mode);
   const [granularity, setGranularity] = useState<ProjectConfig['tracking']['granularity']>(project.config.tracking.granularity);
@@ -328,7 +332,20 @@ export function SettingsModal({
         <p className="muted small">Run <code>vibemap agents sync</code> to rewrite rules files.</p>
       </div>
       <div className="settings-section">
-        <h3>Theme</h3>
+        <h3>Theme &amp; Appearance</h3>
+        {onThemeChange && (
+          <div style={{ marginBottom: '14px' }}>
+            <Selector
+              label="Interface Theme"
+              value={themeMode ?? 'light'}
+              onChange={(val) => onThemeChange(val as 'light' | 'dark')}
+              options={[
+                { value: 'light', label: 'Light (default)' },
+                { value: 'dark', label: 'Dark' },
+              ]}
+            />
+          </div>
+        )}
         <div className="kv">
           <span>Font</span>
           <strong>{project.theme.font}</strong>
@@ -341,7 +358,7 @@ export function SettingsModal({
           <span>Gap</span>
           <strong>{project.theme.gap}px</strong>
         </div>
-        <p className="muted small">Edit .vibemap/theme.yaml to customise; the viewer reloads it live.</p>
+        <p className="muted small">Edit .vibemap/theme.yaml to customise map styling; the viewer reloads it live.</p>
       </div>
       <div className="settings-section">
         <h3>Privacy</h3>

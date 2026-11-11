@@ -38,6 +38,10 @@ export function TopBar({
   onHelp,
   onExport,
   onRefresh,
+  sidebarCollapsed,
+  onToggleSidebar,
+  inspectorCollapsed,
+  onToggleInspector,
 }: {
   project: ProjectInfo | null;
   detail: MapDetail | null;
@@ -57,12 +61,26 @@ export function TopBar({
   onHelp: () => void;
   onExport: (format: string) => void;
   onRefresh: () => void;
+  sidebarCollapsed?: boolean;
+  onToggleSidebar?: () => void;
+  inspectorCollapsed?: boolean;
+  onToggleInspector?: () => void;
 }): React.ReactElement {
   const errors = check?.errors.length ?? 0;
   const warnings = check?.warnings.length ?? 0;
   return (
     <header className="topbar">
       <div className="topbar-brand">
+        {onToggleSidebar && (
+          <IconButton
+            label={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+            tooltip={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+            icon={<span aria-hidden="true">{sidebarCollapsed ? '☰' : '◀'}</span>}
+            variant="ghost"
+            size="sm"
+            onClick={onToggleSidebar}
+          />
+        )}
         <div className="logo" aria-hidden="true">
           VM
         </div>
@@ -125,6 +143,16 @@ export function TopBar({
         <IconButton label="Refresh" tooltip="Refresh from disk" icon={<span aria-hidden="true">↻</span>} variant="ghost" size="sm" onClick={onRefresh} />
         <IconButton label="Help" tooltip="Keyboard shortcuts (?)" icon={<span aria-hidden="true">?</span>} variant="ghost" size="sm" onClick={onHelp} />
         <IconButton label="Settings" tooltip="Settings" icon={<span aria-hidden="true">⚙</span>} variant="ghost" size="sm" onClick={onSettings} />
+        {tab === 'maps' && onToggleInspector && (
+          <IconButton
+            label={inspectorCollapsed ? 'Expand inspector' : 'Collapse inspector'}
+            tooltip={inspectorCollapsed ? 'Expand inspector' : 'Collapse inspector'}
+            icon={<span aria-hidden="true">{inspectorCollapsed ? '◀' : '▶'}</span>}
+            variant="ghost"
+            size="sm"
+            onClick={onToggleInspector}
+          />
+        )}
       </div>
     </header>
   );

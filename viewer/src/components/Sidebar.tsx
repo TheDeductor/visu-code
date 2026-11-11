@@ -15,6 +15,7 @@ export function Sidebar({
   onNewMap,
   onBootstrap,
   version,
+  onCollapse,
 }: {
   maps: MapSummary[];
   selectedId: string | null;
@@ -25,6 +26,7 @@ export function Sidebar({
   onNewMap: () => void;
   onBootstrap: () => void;
   version?: string;
+  onCollapse?: () => void;
 }): React.ReactElement {
   const filtered = useMemo(() => {
     const needle = filter.trim().toLowerCase();
@@ -47,6 +49,9 @@ export function Sidebar({
       <div className="sidebar-head">
         <TextInput label="Filter maps" isLabelHidden value={filter} onChange={(val) => onFilter(val)} placeholder="Filter maps…" hasClear size="sm" />
         <IconButton label="New map" tooltip="New map" icon={<span aria-hidden="true">+</span>} variant="ghost" size="sm" onClick={onNewMap} />
+        {onCollapse && (
+          <IconButton label="Collapse sidebar" tooltip="Collapse sidebar" icon={<span aria-hidden="true">«</span>} variant="ghost" size="sm" onClick={onCollapse} />
+        )}
       </div>
       <div className="map-tree" role="tree">
         {groups.map(([folder, items]) => (

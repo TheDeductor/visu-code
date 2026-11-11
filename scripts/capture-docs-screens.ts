@@ -17,38 +17,44 @@ async function main() {
   const page = await context.newPage();
   await page.goto(server.url, { waitUntil: 'networkidle' });
 
+  async function switchTheme(mode: 'light' | 'dark') {
+    await page.evaluate((m) => {
+      window.dispatchEvent(new CustomEvent('vibemap:theme-change', { detail: m }));
+    }, mode);
+    await page.emulateMedia({ colorScheme: mode });
+    await page.waitForTimeout(400);
+  }
+
+  // Ensure default is light
+  await switchTheme('light');
+
   // 1. Select Maps view, map diagram-pipeline
   await page.getByRole('button', { name: /^maps$/i }).click();
   await page.getByRole('treeitem', { name: /diagram-pipeline/i }).click();
   await page.waitForTimeout(800);
   await page.screenshot({ path: path.join(targetDir, 'maps-diagram-pipeline-light.png') });
 
-  await page.emulateMedia({ colorScheme: 'dark' });
-  await page.waitForTimeout(400);
+  await switchTheme('dark');
   await page.screenshot({ path: path.join(targetDir, 'maps-diagram-pipeline-dark.png') });
-  await page.emulateMedia({ colorScheme: 'light' });
-  await page.waitForTimeout(400);
+  await switchTheme('light');
 
   // 2. Select Coverage
   await page.getByRole('button', { name: /^coverage$/i }).click();
   await page.waitForTimeout(600);
   await page.screenshot({ path: path.join(targetDir, 'coverage-light.png') });
 
-  await page.emulateMedia({ colorScheme: 'dark' });
-  await page.waitForTimeout(400);
+  await switchTheme('dark');
   await page.screenshot({ path: path.join(targetDir, 'coverage-dark.png') });
-  await page.emulateMedia({ colorScheme: 'light' });
-  await page.waitForTimeout(400);
+  await switchTheme('light');
 
   // 3. Select Changes
   await page.getByRole('button', { name: /^changes$/i }).click();
   await page.waitForTimeout(600);
   await page.screenshot({ path: path.join(targetDir, 'changes-light.png') });
 
-  await page.emulateMedia({ colorScheme: 'dark' });
-  await page.waitForTimeout(400);
+  await switchTheme('dark');
   await page.screenshot({ path: path.join(targetDir, 'changes-dark.png') });
-  await page.emulateMedia({ colorScheme: 'light' });
+  await switchTheme('light');
 
   await browser.close();
   await server.close();

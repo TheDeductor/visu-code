@@ -90,7 +90,15 @@ const PLAN_PROMPT = `Plan this project visually in VibeMap before writing code.
 
 Do not invent components. Keep every map small.`;
 
-export function App(): React.ReactElement {
+export function App({
+  themeMode,
+  onThemeChange,
+}: {
+  themeMode?: 'light' | 'dark';
+  onThemeChange?: (mode: 'light' | 'dark') => void;
+} = {}): React.ReactElement {
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [inspectorCollapsed, setInspectorCollapsed] = useState(false);
   const [project, setProject] = useState<ProjectInfo | null>(null);
   const [maps, setMaps] = useState<MapSummary[]>([]);
   const [check, setCheck] = useState<CheckReport | null>(null);
@@ -1100,8 +1108,18 @@ export function App(): React.ReactElement {
         onHelp={() => setModal({ kind: 'shortcuts' })}
         onExport={(format) => void exportMap(format)}
         onRefresh={() => void refreshAll()}
+        sidebarCollapsed={sidebarCollapsed}
+        onToggleSidebar={() => setSidebarCollapsed((v) => !v)}
+        inspectorCollapsed={inspectorCollapsed}
+        onToggleInspector={() => setInspectorCollapsed((v) => !v)}
       />
-      <div className={classNames('app-body', tab !== 'maps' && 'no-inspector')}>
+      <div
+        className={classNames(
+          'app-body',
+          (tab !== 'maps' || inspectorCollapsed || !viewDetail) && 'no-inspector',
+          sidebarCollapsed && 'sidebar-collapsed',
+        )}
+      >
         <Sidebar
           maps={maps}
           selectedId={selectedMapId}
@@ -1112,8 +1130,31 @@ export function App(): React.ReactElement {
           onNewMap={() => setModal({ kind: 'new-map' })}
           onBootstrap={() => void bootstrap()}
           version={project?.versions.vibemap}
+          onCollapse={() => setSidebarCollapsed(true)}
         />
         <main className="workspace">
+          {sidebarCollapsed && (
+            <button
+              type="button"
+              className="floating-panel-toggle floating-left"
+              onClick={() => setSidebarCollapsed(false)}
+              title="Expand sidebar"
+            >
+              <span aria-hidden="true">»</span>
+              <span>Maps</span>
+            </button>
+          )}
+          {tab === 'maps' && viewDetail && inspectorCollapsed && (
+            <button
+              type="button"
+              className="floating-panel-toggle floating-right"
+              onClick={() => setInspectorCollapsed(false)}
+              title="Expand inspector"
+            >
+              <span>Inspector</span>
+              <span aria-hidden="true">«</span>
+            </button>
+          )}
           {noMaps ? (
             <div className="empty-workspace">
               <EmptyState
@@ -1307,7 +1348,7 @@ export function App(): React.ReactElement {
             </div>
           )}
         </main>
-        {tab === 'maps' && viewDetail ? (
+        {tab === 'maps' && viewDetail && !inspectorCollapsed ? (
           <Inspector
             detail={viewDetail}
             selectedNodeId={selectedNodeId}
@@ -1321,6 +1362,7 @@ export function App(): React.ReactElement {
             onStartWalkthrough={startWalkthrough}
             onOpenNotes={() => setTab('notes')}
             onToast={toast}
+            onCollapse={() => setInspectorCollapsed(true)}
           />
         ) : null}
       </div>
@@ -1340,7 +1382,15 @@ export function App(): React.ReactElement {
       {modal?.kind === 'add-node' ? <AddNodeModal onClose={() => setModal(null)} onCreate={createNode} startConnect={connectFrom} /> : null}
       {modal?.kind === 'edge' ? <EdgeModal from={modal.from} to={modal.to} onClose={() => setModal(null)} onCreate={createEdge} /> : null}
       {modal?.kind === 'sticky' ? <StickyModal onClose={() => setModal(null)} onCreate={addAnnotation} /> : null}
-      {modal?.kind === 'settings' && project ? <SettingsModal project={project} onClose={() => setModal(null)} onSave={saveSettings} /> : null}
+      {modal?.kind === 'settings' && project ? (
+        <SettingsModal
+          project={project}
+          onClose={() => setModal(null)}
+          onSave={saveSettings}
+          themeMode={themeMode}
+          onThemeChange={onThemeChange}
+        />
+      ) : null}
       {modal?.kind === 'shortcuts' ? <ShortcutsModal onClose={() => setModal(null)} /> : null}
       {modal?.kind === 'tour' ? (
         <TourModal
