@@ -468,37 +468,39 @@ a {
 }
 
 .map-group {
-  margin-bottom: 8px;
+  margin-bottom: var(--spacing-2, 8px);
 }
 
 .group-label {
-  font-size: 10.5px;
+  font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.07em;
   text-transform: uppercase;
-  color: var(--muted);
+  color: var(--color-text-tertiary, var(--muted));
   padding: 8px 8px 4px;
 }
 
 .map-row {
   display: flex;
   align-items: flex-start;
-  gap: 8px;
+  gap: var(--spacing-2, 8px);
   width: 100%;
   text-align: left;
-  border: 0;
+  border: 1px solid transparent;
   background: transparent;
-  border-radius: 8px;
-  padding: 6px 7px;
-  color: var(--ink);
+  border-radius: var(--radius-md, 8px);
+  padding: 6px 8px;
+  color: var(--color-text-primary, var(--ink));
+  transition: background-color 0.15s ease, border-color 0.15s ease;
 }
 
 .map-row:hover {
-  background: var(--panel-2);
+  background: var(--color-surface-container-high, var(--panel-2));
 }
 
 .map-row.active {
-  background: var(--accent-soft);
+  background: var(--color-background-accent, var(--accent-soft));
+  border-color: var(--color-border-focus, var(--accent));
 }
 
 .map-icon {
@@ -506,13 +508,13 @@ a {
   height: 20px;
   display: grid;
   place-items: center;
-  color: var(--muted);
+  color: var(--color-text-secondary, var(--muted));
   font-size: 15px;
   flex: 0 0 auto;
 }
 
 .map-row.active .map-icon {
-  color: var(--accent-strong);
+  color: var(--color-text-accent, var(--accent-strong));
 }
 
 .map-copy {
@@ -524,7 +526,7 @@ a {
 }
 
 .map-title {
-  font-size: 12.8px;
+  font-size: 13px;
   font-weight: 600;
   white-space: nowrap;
   overflow: hidden;
@@ -532,11 +534,12 @@ a {
   display: flex;
   align-items: center;
   gap: 5px;
+  color: var(--color-text-primary, var(--ink));
 }
 
 .map-meta {
-  font-size: 10.8px;
-  color: var(--muted);
+  font-size: 11px;
+  color: var(--color-text-secondary, var(--muted));
   display: flex;
   align-items: center;
   gap: 5px;
