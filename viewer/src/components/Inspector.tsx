@@ -3,6 +3,7 @@ import { Button } from '@astryxdesign/core/Button';
 import { IconButton } from '@astryxdesign/core/IconButton';
 import { Card } from '@astryxdesign/core/Card';
 import { List, ListItem } from '@astryxdesign/core/List';
+import { Collapsible } from '@astryxdesign/core/Collapsible';
 import type { ChangeEntry, CodeRef, NodeKind, NodeStatus, VibeNode } from '@core/types';
 import { NODE_KINDS, NODE_STATUSES } from '@core/types';
 import { kindLabel } from '@core/theme';
@@ -134,14 +135,15 @@ export function Inspector({
           {map.type === 'graph' ? (
             <>
               <div className="inspector-section">
-                <div className="section-title">Evidence</div>
-                {(['verified', 'declared', 'stale', 'planned'] as const).map((status) => (
-                  <div key={status} className="evidence-row">
-                    <Badge tone={status === 'verified' ? 'ok' : status === 'stale' ? 'error' : status === 'declared' ? 'warn' : 'info'}>{status}</Badge>
-                    <span>{evidenceCounts[status] ?? 0}</span>
-                  </div>
-                ))}
-                {detail.error ? <p className="inline-error">{detail.error.message}</p> : null}
+                <Collapsible trigger={<div className="section-title">Evidence</div>} defaultIsOpen>
+                  {(['verified', 'declared', 'stale', 'planned'] as const).map((status) => (
+                    <div key={status} className="evidence-row">
+                      <Badge tone={status === 'verified' ? 'ok' : status === 'stale' ? 'error' : status === 'declared' ? 'warn' : 'info'}>{status}</Badge>
+                      <span>{evidenceCounts[status] ?? 0}</span>
+                    </div>
+                  ))}
+                  {detail.error ? <p className="inline-error">{detail.error.message}</p> : null}
+                </Collapsible>
               </div>
               {map.walkthrough?.length ? (
                 <div className="inspector-section">
@@ -149,20 +151,21 @@ export function Inspector({
                 </div>
               ) : null}
               <div className="inspector-section">
-                <div className="section-title">Nodes</div>
-                <div className="node-list" role="list">
-                  <List density="compact" hasDividers>
-                    {nodes.map((item) => (
-                      <ListItem
-                        key={item.id}
-                        onClick={() => onSelectNode(item.id)}
-                        label={item.label}
-                        endContent={<span className="muted">{kindLabel(item.kind)}</span>}
-                      />
-                    ))}
-                  </List>
-                </div>
-                <p className="muted small">This list is the keyboard-accessible alternative to the canvas.</p>
+                <Collapsible trigger={<div className="section-title">Nodes</div>} defaultIsOpen>
+                  <div className="node-list" role="list">
+                    <List density="compact" hasDividers>
+                      {nodes.map((item) => (
+                        <ListItem
+                          key={item.id}
+                          onClick={() => onSelectNode(item.id)}
+                          label={item.label}
+                          endContent={<span className="muted">{kindLabel(item.kind)}</span>}
+                        />
+                      ))}
+                    </List>
+                  </div>
+                  <p className="muted small">This list is the keyboard-accessible alternative to the canvas.</p>
+                </Collapsible>
               </div>
             </>
           ) : map.type === 'sequence' ? (
@@ -187,23 +190,24 @@ export function Inspector({
             </div>
           ) : null}
           <div className="inspector-section">
-            <div className="section-title">Details</div>
-            <div className="kv">
-              <span>Level</span>
-              <strong>{map.level ?? 'unset'}</strong>
-            </div>
-            <div className="kv">
-              <span>Phase</span>
-              <strong>{map.phase ?? '—'}</strong>
-            </div>
-            <div className="kv">
-              <span>File</span>
-              <code>{detail.file}</code>
-            </div>
-            <div className="kv">
-              <span>Rev</span>
-              <code>{detail.rev.slice(0, 10)}</code>
-            </div>
+            <Collapsible trigger={<div className="section-title">Details</div>} defaultIsOpen>
+              <div className="kv">
+                <span>Level</span>
+                <strong>{map.level ?? 'unset'}</strong>
+              </div>
+              <div className="kv">
+                <span>Phase</span>
+                <strong>{map.phase ?? '—'}</strong>
+              </div>
+              <div className="kv">
+                <span>File</span>
+                <code>{detail.file}</code>
+              </div>
+              <div className="kv">
+                <span>Rev</span>
+                <code>{detail.rev.slice(0, 10)}</code>
+              </div>
+            </Collapsible>
           </div>
           <div className="inspector-section">
             <Button label="Open related notes" variant="ghost" width="100%" onClick={onOpenNotes} />
@@ -370,70 +374,73 @@ export function Inspector({
               </Card>
             ) : null}
             <div className="inspector-section">
-              <div className="section-title">Code refs</div>
-              {(node.refs ?? []).length ? (
-                (node.refs ?? []).map((ref, index) => (
-                  <div key={index} className="ref-view">
-                    <button type="button" className="ref-path" onClick={() => void copyText(ref.path)} title="Copy path">
-                      <code>{shortPath(ref.path)}</code>
-                      {ref.symbol ? <span>#{ref.symbol}</span> : null}
-                      {ref.lines ? <span className="muted">:{ref.lines[0]}–{ref.lines[1]}</span> : null}
-                    </button>
-                    <Button label="Peek" variant="secondary" size="sm" onClick={() => void previewCode(ref)} />
+              <Collapsible trigger={<div className="section-title">Code refs</div>} defaultIsOpen>
+                {(node.refs ?? []).length ? (
+                  (node.refs ?? []).map((ref, index) => (
+                    <div key={index} className="ref-view">
+                      <button type="button" className="ref-path" onClick={() => void copyText(ref.path)} title="Copy path">
+                        <code>{shortPath(ref.path)}</code>
+                        {ref.symbol ? <span>#{ref.symbol}</span> : null}
+                        {ref.lines ? <span className="muted">:{ref.lines[0]}–{ref.lines[1]}</span> : null}
+                      </button>
+                      <Button label="Peek" variant="secondary" size="sm" onClick={() => void previewCode(ref)} />
+                    </div>
+                  ))
+                ) : (
+                  <p className="muted small">No refs. {node.kind === 'external' || node.kind === 'actor' ? 'Allowed for external systems and people.' : 'Add code refs so this node is verifiable.'}</p>
+                )}
+                {codeError ? <p className="inline-error">{codeError}</p> : null}
+                {code ? (
+                  <div className="code-peek">
+                    <div className="code-peek-head">
+                      <code>{code.path}</code>
+                      <IconButton label="Close code preview" icon={<span aria-hidden="true">×</span>} variant="ghost" size="sm" onClick={() => setCode(null)} />
+                    </div>
+                    <pre>{code.content}</pre>
                   </div>
-                ))
-              ) : (
-                <p className="muted small">No refs. {node.kind === 'external' || node.kind === 'actor' ? 'Allowed for external systems and people.' : 'Add code refs so this node is verifiable.'}</p>
-              )}
-              {codeError ? <p className="inline-error">{codeError}</p> : null}
-              {code ? (
-                <div className="code-peek">
-                  <div className="code-peek-head">
-                    <code>{code.path}</code>
-                    <IconButton label="Close code preview" icon={<span aria-hidden="true">×</span>} variant="ghost" size="sm" onClick={() => setCode(null)} />
-                  </div>
-                  <pre>{code.content}</pre>
-                </div>
-              ) : null}
+                ) : null}
+              </Collapsible>
             </div>
             <div className="inspector-section">
-              <div className="section-title">Connections</div>
-              {connections.incoming.length + connections.outgoing.length === 0 ? <p className="muted small">No connections yet.</p> : null}
-              {connections.incoming.length + connections.outgoing.length > 0 ? (
-                <List density="compact" hasDividers>
-                  {connections.incoming.map(({ edge, node: other }) => (
-                    <ListItem
-                      key={`in-${edge.from}-${edge.to}-${edge.kind}`}
-                      onClick={() => other && onSelectNode(other.id)}
-                      startContent={<span className="conn-dir">←</span>}
-                      label={other?.label ?? edge.from}
-                      endContent={<Badge tone="neutral">{edge.kind}</Badge>}
-                    />
-                  ))}
-                  {connections.outgoing.map(({ edge, node: other }) => (
-                    <ListItem
-                      key={`out-${edge.from}-${edge.to}-${edge.kind}`}
-                      onClick={() => other && onSelectNode(other.id)}
-                      startContent={<span className="conn-dir">→</span>}
-                      label={other?.label ?? edge.to}
-                      endContent={<Badge tone="neutral">{edge.kind}</Badge>}
-                    />
-                  ))}
-                </List>
-              ) : null}
+              <Collapsible trigger={<div className="section-title">Connections</div>} defaultIsOpen>
+                {connections.incoming.length + connections.outgoing.length === 0 ? <p className="muted small">No connections yet.</p> : null}
+                {connections.incoming.length + connections.outgoing.length > 0 ? (
+                  <List density="compact" hasDividers>
+                    {connections.incoming.map(({ edge, node: other }) => (
+                      <ListItem
+                        key={`in-${edge.from}-${edge.to}-${edge.kind}`}
+                        onClick={() => other && onSelectNode(other.id)}
+                        startContent={<span className="conn-dir">←</span>}
+                        label={other?.label ?? edge.from}
+                        endContent={<Badge tone="neutral">{edge.kind}</Badge>}
+                      />
+                    ))}
+                    {connections.outgoing.map(({ edge, node: other }) => (
+                      <ListItem
+                        key={`out-${edge.from}-${edge.to}-${edge.kind}`}
+                        onClick={() => other && onSelectNode(other.id)}
+                        startContent={<span className="conn-dir">→</span>}
+                        label={other?.label ?? edge.to}
+                        endContent={<Badge tone="neutral">{edge.kind}</Badge>}
+                      />
+                    ))}
+                  </List>
+                ) : null}
+              </Collapsible>
             </div>
             <div className="inspector-section">
-              <div className="section-title">History</div>
-              {nodeChanges.length ? (
-                nodeChanges.map((change) => (
-                  <div key={change.id} className="history-row">
-                    <strong>{change.title}</strong>
-                    <span className="muted">{change.date.slice(0, 10)}</span>
-                  </div>
-                ))
-              ) : (
-                <p className="muted small">No recorded changes touch this node yet.</p>
-              )}
+              <Collapsible trigger={<div className="section-title">History</div>} defaultIsOpen>
+                {nodeChanges.length ? (
+                  nodeChanges.map((change) => (
+                    <div key={change.id} className="history-row">
+                      <strong>{change.title}</strong>
+                      <span className="muted">{change.date.slice(0, 10)}</span>
+                    </div>
+                  ))
+                ) : (
+                  <p className="muted small">No recorded changes touch this node yet.</p>
+                )}
+              </Collapsible>
             </div>
             {node.drill ? (
               <div className="inspector-section">
