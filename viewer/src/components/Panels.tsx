@@ -3,6 +3,7 @@ import { Button } from '@astryxdesign/core/Button';
 import { IconButton } from '@astryxdesign/core/IconButton';
 import { Token } from '@astryxdesign/core/Token';
 import { Card } from '@astryxdesign/core/Card';
+import { List, ListItem } from '@astryxdesign/core/List';
 import type { ChangeEntry, CheckReport, CoverageReport, HistoryPoint, Issue, MapSummary, Phase, Suggestion } from '@core/types';
 import { api, type NoteEntry, type PhaseProgress } from '../api';
 import { Badge, EmptyState, ProgressBar, Spinner } from './ui';
@@ -33,25 +34,36 @@ export function ChangesPanel({
   return (
     <div className="changes-layout">
       <div className="change-list" role="list">
-        {changes.map((change) => (
-          <button key={change.id} type="button" className={classNames('change-card', selected?.id === change.id && 'active')} onClick={() => setSelectedId(change.id)} role="listitem">
-            <div className="change-card-top">
-              <strong>{change.title}</strong>
-              <span className="muted">{relativeTime(change.date)}</span>
-            </div>
-            <div className="change-badges">
-              <Badge tone="neutral">{change.type}</Badge>
-              {change.phase ? <Badge tone="info">{change.phase}</Badge> : null}
-              {change.commit ? <Badge tone="ok">sealed</Badge> : <Badge tone="warn">unsealed</Badge>}
-            </div>
-            <div className="delta-chips">
-              <Token label={`+${change.delta.added_nodes.length}`} color="green" size="sm" />
-              <Token label={`~${change.delta.modified_nodes.length}`} color="orange" size="sm" />
-              <Token label={`−${change.delta.removed_nodes.length}`} color="red" size="sm" />
-              <span className="muted">{change.maps.join(', ')}</span>
-            </div>
-          </button>
-        ))}
+        <List density="compact" hasDividers>
+          {changes.map((change) => (
+            <ListItem
+              key={change.id}
+              isSelected={selected?.id === change.id}
+              onClick={() => setSelectedId(change.id)}
+              label={
+                <div className="change-card-top">
+                  <strong>{change.title}</strong>
+                  <span className="muted">{relativeTime(change.date)}</span>
+                </div>
+              }
+              description={
+                <>
+                  <div className="change-badges" style={{ marginTop: '4px', marginBottom: '4px' }}>
+                    <Badge tone="neutral">{change.type}</Badge>
+                    {change.phase ? <Badge tone="info">{change.phase}</Badge> : null}
+                    {change.commit ? <Badge tone="ok">sealed</Badge> : <Badge tone="warn">unsealed</Badge>}
+                  </div>
+                  <div className="delta-chips">
+                    <Token label={`+${change.delta.added_nodes.length}`} color="green" size="sm" />
+                    <Token label={`~${change.delta.modified_nodes.length}`} color="orange" size="sm" />
+                    <Token label={`−${change.delta.removed_nodes.length}`} color="red" size="sm" />
+                    <span className="muted">{change.maps.join(', ')}</span>
+                  </div>
+                </>
+              }
+            />
+          ))}
+        </List>
       </div>
       {selected ? (
         <article className="change-detail">
@@ -553,12 +565,17 @@ export function CoveragePanel({
       <section>
         <h3>Unmapped files ({coverage.unmapped.length})</h3>
         <div className="unmapped-list">
-          {coverage.unmapped.slice(0, 120).map((file) => (
-            <div key={file} className="unmapped-row">
-              <code>{file}</code>
-              <Button label="Copy prompt" variant="secondary" size="sm" onClick={() => onCopy(promptForFile(file), 'Prompt copied')} />
-            </div>
-          ))}
+          <List density="compact" hasDividers>
+            {coverage.unmapped.slice(0, 120).map((file) => (
+              <ListItem
+                key={file}
+                label={<code>{file}</code>}
+                endContent={
+                  <Button label="Copy prompt" variant="secondary" size="sm" onClick={() => onCopy(promptForFile(file), 'Prompt copied')} />
+                }
+              />
+            ))}
+          </List>
         </div>
       </section>
     </div>
@@ -589,18 +606,26 @@ export function ProblemsPanel({ report, onOpenIssue, onRunCheck }: { report: Che
       </div>
       {!issues.length ? <p className="problems-empty">✓ No problems. Maps are valid and evidence resolves.</p> : null}
       <div className="issue-list">
-        {issues.map((issue) => (
-          <button key={`${issue.code}-${issue.file}-${issue.line}-${issue.message}`} type="button" className={classNames('issue-row', issue.severity)} onClick={() => onOpenIssue(issue)}>
-            <span className="issue-code">{issue.code}</span>
-            <span className="issue-copy">
-              <strong>{issue.message}</strong>
-              <span className="muted">
-                {issueLocation(issue)}
-                {issue.hint ? ` — ${issue.hint}` : ''}
-              </span>
-            </span>
-          </button>
-        ))}
+        <List density="compact" hasDividers>
+          {issues.map((issue) => (
+            <ListItem
+              key={`${issue.code}-${issue.file}-${issue.line}-${issue.message}`}
+              onClick={() => onOpenIssue(issue)}
+              startContent={
+                <Badge tone={issue.severity === 'error' ? 'error' : 'warn'}>
+                  {issue.code}
+                </Badge>
+              }
+              label={<strong>{issue.message}</strong>}
+              description={
+                <span className="muted small">
+                  {issueLocation(issue)}
+                  {issue.hint ? ` — ${issue.hint}` : ''}
+                </span>
+              }
+            />
+          ))}
+        </List>
       </div>
     </div>
   );

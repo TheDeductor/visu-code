@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Button } from '@astryxdesign/core/Button';
 import { IconButton } from '@astryxdesign/core/IconButton';
 import { Card } from '@astryxdesign/core/Card';
+import { List, ListItem } from '@astryxdesign/core/List';
 import type { ChangeEntry, CodeRef, NodeKind, NodeStatus, VibeNode } from '@core/types';
 import { NODE_KINDS, NODE_STATUSES } from '@core/types';
 import { kindLabel } from '@core/theme';
@@ -150,12 +151,16 @@ export function Inspector({
               <div className="inspector-section">
                 <div className="section-title">Nodes</div>
                 <div className="node-list" role="list">
-                  {nodes.map((item) => (
-                    <button key={item.id} type="button" className="node-list-row" onClick={() => onSelectNode(item.id)} role="listitem">
-                      <span>{item.label}</span>
-                      <span className="muted">{kindLabel(item.kind)}</span>
-                    </button>
-                  ))}
+                  <List density="compact" hasDividers>
+                    {nodes.map((item) => (
+                      <ListItem
+                        key={item.id}
+                        onClick={() => onSelectNode(item.id)}
+                        label={item.label}
+                        endContent={<span className="muted">{kindLabel(item.kind)}</span>}
+                      />
+                    ))}
+                  </List>
                 </div>
                 <p className="muted small">This list is the keyboard-accessible alternative to the canvas.</p>
               </div>
@@ -394,20 +399,28 @@ export function Inspector({
             <div className="inspector-section">
               <div className="section-title">Connections</div>
               {connections.incoming.length + connections.outgoing.length === 0 ? <p className="muted small">No connections yet.</p> : null}
-              {connections.incoming.map(({ edge, node: other }) => (
-                <button key={`in-${edge.from}-${edge.to}-${edge.kind}`} type="button" className="conn-row clickable" onClick={() => other && onSelectNode(other.id)}>
-                  <span className="conn-dir">←</span>
-                  <span>{other?.label ?? edge.from}</span>
-                  <Badge tone="neutral">{edge.kind}</Badge>
-                </button>
-              ))}
-              {connections.outgoing.map(({ edge, node: other }) => (
-                <button key={`out-${edge.from}-${edge.to}-${edge.kind}`} type="button" className="conn-row clickable" onClick={() => other && onSelectNode(other.id)}>
-                  <span className="conn-dir">→</span>
-                  <span>{other?.label ?? edge.to}</span>
-                  <Badge tone="neutral">{edge.kind}</Badge>
-                </button>
-              ))}
+              {connections.incoming.length + connections.outgoing.length > 0 ? (
+                <List density="compact" hasDividers>
+                  {connections.incoming.map(({ edge, node: other }) => (
+                    <ListItem
+                      key={`in-${edge.from}-${edge.to}-${edge.kind}`}
+                      onClick={() => other && onSelectNode(other.id)}
+                      startContent={<span className="conn-dir">←</span>}
+                      label={other?.label ?? edge.from}
+                      endContent={<Badge tone="neutral">{edge.kind}</Badge>}
+                    />
+                  ))}
+                  {connections.outgoing.map(({ edge, node: other }) => (
+                    <ListItem
+                      key={`out-${edge.from}-${edge.to}-${edge.kind}`}
+                      onClick={() => other && onSelectNode(other.id)}
+                      startContent={<span className="conn-dir">→</span>}
+                      label={other?.label ?? edge.to}
+                      endContent={<Badge tone="neutral">{edge.kind}</Badge>}
+                    />
+                  ))}
+                </List>
+              ) : null}
             </div>
             <div className="inspector-section">
               <div className="section-title">History</div>

@@ -3,6 +3,7 @@ import { Button } from '@astryxdesign/core/Button';
 import { IconButton } from '@astryxdesign/core/IconButton';
 import { Selector } from '@astryxdesign/core/Selector';
 import { CommandPalette } from '@astryxdesign/core/CommandPalette';
+import { Table, TableBody, TableRow, TableCell } from '@astryxdesign/core/Table';
 import type { SearchSource, SearchableItem } from '@astryxdesign/core/Typeahead';
 import type { NodeKind, NodeStatus, ProjectConfig } from '@core/types';
 import { EDGE_KINDS, NODE_KINDS, NODE_STATUSES } from '@core/types';
@@ -377,18 +378,18 @@ export function ShortcutsModal({ onClose }: { onClose: () => void }): React.Reac
   ];
   return (
     <Modal title="Keyboard shortcuts" onClose={onClose}>
-      <table className="shortcut-table">
-        <tbody>
+      <Table>
+        <TableBody>
           {rows.map(([key, action]) => (
-            <tr key={key}>
-              <td>
+            <TableRow key={key}>
+              <TableCell style={{ width: '120px' }}>
                 <kbd>{key}</kbd>
-              </td>
-              <td>{action}</td>
-            </tr>
+              </TableCell>
+              <TableCell>{action}</TableCell>
+            </TableRow>
           ))}
-        </tbody>
-      </table>
+        </TableBody>
+      </Table>
     </Modal>
   );
 }
