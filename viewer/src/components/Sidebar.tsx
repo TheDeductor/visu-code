@@ -1,5 +1,6 @@
 import React, { useMemo } from 'react';
 import { IconButton } from '@astryxdesign/core/IconButton';
+import { TextInput } from '@astryxdesign/core/TextInput';
 import type { MapSummary } from '@core/types';
 import { Badge } from './ui';
 import { classNames, mapFolder, mapIcon, mapLeaf } from '../util';
@@ -44,13 +45,7 @@ export function Sidebar({
   return (
     <aside className="sidebar" aria-label="Map navigator">
       <div className="sidebar-head">
-        <label className="search-field">
-          <span aria-hidden="true">⌕</span>
-          <input value={filter} onChange={(event) => onFilter(event.target.value)} placeholder="Filter maps…" aria-label="Filter maps" />
-          {filter ? (
-            <IconButton label="Clear filter" icon={<span aria-hidden="true">×</span>} variant="ghost" size="sm" onClick={() => onFilter('')} />
-          ) : null}
-        </label>
+        <TextInput label="Filter maps" isLabelHidden value={filter} onChange={(val) => onFilter(val)} placeholder="Filter maps…" hasClear size="sm" />
         <IconButton label="New map" tooltip="New map" icon={<span aria-hidden="true">+</span>} variant="ghost" size="sm" onClick={onNewMap} />
       </div>
       <div className="map-tree" role="tree">

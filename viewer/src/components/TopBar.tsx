@@ -2,6 +2,7 @@ import React from 'react';
 import { Badge } from '@astryxdesign/core/Badge';
 import { Button } from '@astryxdesign/core/Button';
 import { IconButton } from '@astryxdesign/core/IconButton';
+import { Switch } from '@astryxdesign/core/Switch';
 import { Tab, TabList } from '@astryxdesign/core/TabList';
 import type { CheckReport, MapSummary, ViewerTab } from '@core/types';
 import type { MapDetail, ProjectInfo } from '../api';
@@ -91,9 +92,7 @@ export function TopBar({
           />
         </button>
         <span className={`live-dot live-${live}`} title={live === 'live' ? 'Live updates connected' : live === 'connecting' ? 'Connecting…' : 'Disconnected'} />
-        <button type="button" className={classNames('chip', beginner && 'active')} onClick={() => onBeginner(!beginner)} title="Beginner mode (B)">
-          Beginner
-        </button>
+        <Switch label="Beginner" value={beginner} onChange={(val) => onBeginner(val)} size="sm" />
         <div className="segmented" role="group" aria-label="Mode">
           <button type="button" className={mode === 'view' ? 'active' : ''} onClick={() => onMode('view')}>
             View

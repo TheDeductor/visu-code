@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Button } from '@astryxdesign/core/Button';
 import { IconButton } from '@astryxdesign/core/IconButton';
+import { Selector } from '@astryxdesign/core/Selector';
 import type { NodeKind, NodeStatus, ProjectConfig } from '@core/types';
 import { EDGE_KINDS, NODE_KINDS, NODE_STATUSES } from '@core/types';
 import { api, type ProjectInfo, type SearchResult } from '../api';
@@ -287,23 +288,27 @@ export function SettingsModal({
       <div className="settings-section">
         <h3>Tracking</h3>
         <div className="field-row">
-          <label className="field">
-            <span>Mode</span>
-            <select value={mode} onChange={(event) => setMode(event.target.value as ProjectConfig['tracking']['mode'])}>
-              <option value="every-change">every-change</option>
-              <option value="per-phase">per-phase</option>
-              <option value="manual">manual</option>
-              <option value="off">off</option>
-            </select>
-          </label>
-          <label className="field">
-            <span>Granularity</span>
-            <select value={granularity} onChange={(event) => setGranularity(event.target.value as ProjectConfig['tracking']['granularity'])}>
-              <option value="overview">overview</option>
-              <option value="feature">feature</option>
-              <option value="detail">detail</option>
-            </select>
-          </label>
+          <Selector
+            label="Mode"
+            value={mode}
+            onChange={(val) => setMode(val as ProjectConfig['tracking']['mode'])}
+            options={[
+              { value: 'every-change', label: 'every-change' },
+              { value: 'per-phase', label: 'per-phase' },
+              { value: 'manual', label: 'manual' },
+              { value: 'off', label: 'off' },
+            ]}
+          />
+          <Selector
+            label="Granularity"
+            value={granularity}
+            onChange={(val) => setGranularity(val as ProjectConfig['tracking']['granularity'])}
+            options={[
+              { value: 'overview', label: 'overview' },
+              { value: 'feature', label: 'feature' },
+              { value: 'detail', label: 'detail' },
+            ]}
+          />
         </div>
         <p className="muted small">The agent guide is rewritten when you save. Hooks remind agents to update maps.</p>
       </div>
