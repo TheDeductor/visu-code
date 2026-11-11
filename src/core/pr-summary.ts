@@ -7,7 +7,7 @@ import { loadProject } from './project.js';
 import { diffMaps, diffSummary } from './diff.js';
 import { renderMermaid } from './render.js';
 import { parseMapContent } from './maps.js';
-import { validateProject } from './validate.js';
+import { validateProject, validateProjectAsync } from './validate.js';
 import { mapIdFromFile, normalizeRelPath } from './paths.js';
 import { repoPath } from './git.js';
 
@@ -53,7 +53,7 @@ export interface PrSummaryOptions {
   base?: string;
 }
 
-export function prSummary(root: string, options: PrSummaryOptions = {}): string {
+export async function prSummary(root: string, options: PrSummaryOptions = {}): Promise<string> {
   const project = loadProject(root);
   const base = options.base ?? 'main';
   if (!git(project, ['rev-parse', '--verify', base])) {
@@ -66,7 +66,7 @@ export function prSummary(root: string, options: PrSummaryOptions = {}): string 
     lines.push('> If code changed without map updates, run `vibemap drift` to find gaps.');
     return `${lines.join('\n')}\n`;
   }
-  const check = validateProject(project, { strict: false });
+  const check = await validateProjectAsync(project, { strict: false });
   lines.push(`**${files.length} map${files.length === 1 ? '' : 's'} changed.** Validation: ${check.errors.length} error(s), ${check.warnings.length} warning(s).`, '');
   lines.push('| Map | Change | Nodes | Edges |', '|---|---|---|---|');
   const details: string[] = [];

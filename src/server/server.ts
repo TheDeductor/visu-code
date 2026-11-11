@@ -33,7 +33,7 @@ import {
   type Project,
 } from '../core/project.js';
 import { loadAllMaps, parseMapContent, mapNodeCount, mapEdgeCount, MapValidationError } from '../core/maps.js';
-import { validateProject } from '../core/validate.js';
+import { validateProject, validateProjectAsync } from '../core/validate.js';
 import { applyOpsToFile, readMapContent } from '../core/writer.js';
 import { RevisionConflictError, OpsError, diffPreview } from '../core/ops.js';
 import { diffMaps } from '../core/diff.js';
@@ -249,7 +249,7 @@ class VibeMapServer {
   }
 
   async start(): Promise<RunningServer> {
-    this.refreshAll();
+    await this.refreshAll();
     await this.listen();
     this.startWatcher();
     this.startHeartbeat();
@@ -384,12 +384,12 @@ class VibeMapServer {
         check: this.check,
         token: undefined,
       });
-      ws.on('message', (raw) => {
+      ws.on('message', async (raw) => {
         try {
           const message = JSON.parse(raw.toString()) as { type?: string };
           if (message.type === 'ping') this.send(ws, 'pong', { now: Date.now() });
           if (message.type === 'refresh') {
-            this.refreshAll();
+            await this.refreshAll();
             this.send(ws, 'maps.updated', this.summaries());
           }
         } catch {
@@ -459,7 +459,9 @@ class VibeMapServer {
       this.schedule('config', 200, () => this.reloadConfig());
     }
     if (this.checkTimer) clearTimeout(this.checkTimer);
-    this.checkTimer = setTimeout(() => this.refreshCheck(true), 500);
+    this.checkTimer = setTimeout(() => {
+      void this.refreshCheck(true);
+    }, 500);
   }
 
   private onFsUnlink(abs: string): void {
@@ -467,7 +469,7 @@ class VibeMapServer {
     if (rel.startsWith(`${MAPS_DIR}/maps/`) && rel.endsWith('.vmap.yaml')) {
       const id = mapIdFromFile(rel);
       if (this.maps.delete(id)) this.sendAll('map.removed', { id });
-      this.refreshCheck(true);
+      void this.refreshCheck(true);
     }
   }
 
@@ -498,7 +500,7 @@ class VibeMapServer {
         previous.rev = rev;
       }
       this.sendAll('map.error', { id, issues: parsed.issues });
-      this.refreshCheck(true);
+      await this.refreshCheck(true);
       return;
     }
     const layout = this.readLayoutSafe(id);
@@ -521,14 +523,14 @@ class VibeMapServer {
       summary: previous ? 'Map changed on disk' : 'Map created',
       changedNodeIds: [],
     });
-    this.refreshCheck(true);
+    await this.refreshCheck(true);
   }
 
-  private reloadConfig(): void {
+  private async reloadConfig(): Promise<void> {
     try {
       this.project = loadProject(this.root);
       this.sendAll('config.updated', { config: this.project.config, theme: this.project.theme });
-      this.refreshAll();
+      await this.refreshAll();
     } catch (err) {
       this.sendAll('error', { message: `Config invalid: ${(err as Error).message}` });
     }
@@ -542,7 +544,7 @@ class VibeMapServer {
     }
   }
 
-  refreshAll(): void {
+  async refreshAll(): Promise<void> {
     const result = loadAllMaps(this.project);
     const validIds = new Set<string>();
     const errors = new Map(result.errors.map((e) => [e.id, e]));
@@ -572,13 +574,13 @@ class VibeMapServer {
     }
     for (const id of [...this.maps.keys()]) if (!validIds.has(id) && !errors.has(id)) this.maps.delete(id);
     this.facts = loadFacts(this.project);
-    this.refreshCheck(false);
+    await this.refreshCheck(false);
     this.facts = loadFacts(this.project);
   }
 
-  refreshCheck(broadcast: boolean): void {
+  async refreshCheck(broadcast: boolean): Promise<void> {
     try {
-      this.check = validateProject(this.project, { strict: this.project.config.validation.strict });
+      this.check = await validateProjectAsync(this.project, { strict: this.project.config.validation.strict });
     } catch (err) {
       this.check = {
         ok: false,
@@ -743,7 +745,7 @@ class VibeMapServer {
         type: body.type as 'graph' | 'sequence' | 'erd' | 'mermaid' | undefined,
         level: body.level as 'overview' | 'feature' | 'detail' | undefined,
       });
-      this.refreshAll();
+      await this.refreshAll();
       this.sendAll('maps.updated', this.summaries());
       json(res, 201, { ...created, detail: this.mapDetail(body.id) });
       return;
@@ -826,7 +828,7 @@ class VibeMapServer {
       return;
     }
     if (pathname === '/api/check/run' && method === 'POST') {
-      this.refreshCheck(false);
+      await this.refreshCheck(false);
       this.sendAll('check.updated', { report: this.check });
       json(res, 200, this.check);
       return;
@@ -885,7 +887,7 @@ class VibeMapServer {
     if (pathname === '/api/scan' && method === 'POST') {
       const result = scanProject(this.project, { full: url.searchParams.get('full') === '1' });
       this.facts = result.facts;
-      this.refreshCheck(false);
+      await this.refreshCheck(false);
       this.sendAll('scan.updated', { stats: result.stats });
       this.sendAll('check.updated', { report: this.check });
       json(res, 200, result.stats);
@@ -971,7 +973,7 @@ class VibeMapServer {
     }
     this.recentWrites.set(runtime.file, Date.now());
     await this.reloadMapRuntime(id);
-    this.refreshCheck(true);
+    await this.refreshCheck(true);
     const changed = result.changedNodeIds;
     this.sendAll('map.changed', {
       id,

@@ -13,7 +13,7 @@ import {
   type Project,
 } from '../core/project.js';
 import { loadMap, loadAllMaps } from '../core/maps.js';
-import { validateProject, formatReport } from '../core/validate.js';
+import { validateProject, validateProjectAsync, formatReport } from '../core/validate.js';
 import { scanProject, ensureFacts } from '../core/scanner.js';
 import { computeDrift, driftSummary, readPending } from '../core/drift.js';
 import { computeCoverage, computeSuggestions } from '../core/suggest.js';
@@ -211,7 +211,7 @@ program
       }
       out(ui.dim(`Safe fixes: pruned layout entries for ${plural(fixed, 'map')}.`));
     }
-    let report = validateProject(projectItem, { strict: !!options.strict });
+    let report = await validateProjectAsync(projectItem, { strict: !!options.strict });
     if (maps?.length) {
       const wanted = new Set(maps);
       report = {
@@ -607,17 +607,17 @@ program
   .command('pr-summary')
   .description('Markdown before/after summary for a pull request')
   .option('--base <ref>', 'base branch/ref', 'main')
-  .action((options) => {
-    out(prSummary(project().root, { base: options.base }));
+  .action(async (options) => {
+    out(await prSummary(project().root, { base: options.base }));
   });
 
 program
   .command('export')
   .description('Export a self-contained read-only static site')
   .requiredOption('--static <dir>', 'output directory')
-  .action((options) => {
+  .action(async (options) => {
     const projectItem = project();
-    const result = staticExport(projectItem, options.static);
+    const result = await staticExport(projectItem, options.static);
     out(ui.green(`✓ Static site written to ${result.outDir} (${plural(result.maps, 'map')})`));
     out(ui.dim(`Open ${path.join(result.outDir, 'index.html')}`));
   });

@@ -331,6 +331,7 @@ export const ThemeSchema = z
       .strict()
       .default({ w: 140, h: 56 }),
     maxLabelWidth: z.number().min(120).max(500).default(220),
+    layoutEngine: z.enum(['legacy', 'elk']).default('legacy'),
     colors: z
       .object({
         ui: z.string().default('#a5d8ff'),

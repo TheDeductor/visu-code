@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import crypto from 'node:crypto';
 import type {
   CheckOptions,
   CheckReport,
@@ -13,7 +14,7 @@ import type {
 import { SCHEMA_VERSION } from './types.js';
 import type { Project } from './project.js';
 import { listMapIds, readLocks, readPhases, tryLoadProject } from './project.js';
-import { loadAllMaps, type LoadedMap } from './maps.js';
+import { loadAllMaps, loadMap, type LoadedMap } from './maps.js';
 import { ensureFacts } from './scanner.js';
 import { REF_REQUIRED_KINDS, coverageReport, evidenceStats, resolveEvidence } from './evidence.js';
 import { isNodeLocked, lockKey, lockStatus, nodeLockHash } from './locks.js';
@@ -24,6 +25,9 @@ import { rankGraph } from './layout.js';
 import { isCodeLanguage, mapFileFromId, toPosix } from './paths.js';
 import { LayoutSidecarSchema, PhasesSchema } from './schema.js';
 import { lineForPath, parseYamlFile, readJsonFile } from './yaml.js';
+import { layoutQuality } from './layout-quality.js';
+import { layoutMapAsync, type LayoutEngineName } from './layout-engine.js';
+import { readLayout } from './project.js';
 
 const SUPPORTED_SYMBOL_LANGS = new Set(['ts', 'tsx', 'js', 'jsx', 'py', 'prisma']);
 
@@ -90,12 +94,130 @@ function mapIdFromLayoutFile(rel: string): string {
 }
 
 /**
- * Async entry point for validators that will need headless layout in Phase 5.
- * Today it delegates to the synchronous validator; keeping it here lets the
- * CLI/server switch to awaited layout checks without another API break.
+ * Async entry point that layers layout-quality validation on top of the
+ * synchronous content checks. Runs layout via the configured engine and
+ * evaluates W121 (edge crossings) and E-HARD-LAYOUT (any hard metric > 0).
+ *
+ * Results are cached by map content hash in .vibemap/.cache/layout-quality/
+ * so repeated check runs stay fast.
  */
 export async function validateProjectAsync(project: Project, opts: CheckOptions = {}): Promise<CheckReport> {
-  return validateProject(project, opts);
+  const report = validateProject(project, opts);
+
+  // Layer layout-quality checks on graph maps.
+  const engine: LayoutEngineName = project.theme.layoutEngine ?? 'legacy';
+  const loaded = loadAllMaps(project);
+  const cacheDir = path.join(project.vibemapDir, '.cache', 'layout-quality');
+
+  for (const mapItem of loaded.maps) {
+    if (mapItem.map.type !== 'graph') continue;
+
+    const file = mapItem.file;
+    const map = mapItem.map;
+    const contentHash = crypto.createHash('sha1').update(JSON.stringify(map)).digest('hex');
+
+    // Check cache
+    let quality: ReturnType<typeof layoutQuality> | null = null;
+    const cachePath = path.join(cacheDir, `${contentHash}.json`);
+    try {
+      if (fs.existsSync(cachePath)) {
+        quality = readJsonFile<ReturnType<typeof layoutQuality>>(cachePath);
+      }
+    } catch {
+      // Cache miss or corrupt — recompute.
+    }
+
+    if (!quality) {
+      try {
+        const sidecar = readLayout(project, mapItem.id);
+        const layout = await layoutMapAsync(map, project.theme, { sidecar, engine });
+        quality = layoutQuality(layout, project.theme);
+
+        // Write cache
+        try {
+          fs.mkdirSync(cacheDir, { recursive: true });
+          fs.writeFileSync(cachePath, JSON.stringify(quality), 'utf-8');
+        } catch {
+          // Cache write failure is non-fatal.
+        }
+      } catch {
+        // Layout failure — skip layout-quality checks for this map.
+        continue;
+      }
+    }
+
+    // Determine if map has pinned nodes (downgrade hard → warning).
+    const sidecar = readLayout(project, mapItem.id);
+    const hasPinned = sidecar && Object.values(sidecar.nodes).some((n) => n.pinned);
+
+    // W121: edge crossings above threshold
+    const edgeCount = map.edges.length;
+    const crossingThreshold = Math.max(2, Math.floor(0.25 * edgeCount));
+    if (quality.edgeCrossings > crossingThreshold) {
+      report.warnings.push(
+        issue(
+          'warning',
+          'W121',
+          file,
+          `${quality.edgeCrossings} edge crossings (threshold ${crossingThreshold}).`,
+          undefined,
+          'Reorder nodes, remove edges, or split the map.',
+        ),
+      );
+    }
+
+    // E-HARD-LAYOUT: any hard metric > 0
+    const hardMetrics: Array<[string, number]> = [
+      ['nodeOverlaps', quality.nodeOverlaps],
+      ['groupOverlaps', quality.groupOverlaps],
+      ['groupContainmentViolations', quality.groupContainmentViolations],
+      ['edgeNodeCrossings', quality.edgeNodeCrossings],
+      ['labelOverlaps', quality.labelOverlaps],
+    ];
+    const violations = hardMetrics.filter(([, v]) => v > 0);
+
+    if (violations.length > 0) {
+      const detail = violations.map(([name, v]) => `${name}=${v}`).join(', ');
+      if (hasPinned) {
+        // Downgrade to warnings for pinned maps
+        for (const [name, v] of violations) {
+          const warnCode = name.includes('group') ? 'W-PINNED-GROUP' : 'W-PINNED-ROUTE';
+          report.warnings.push(
+            issue(
+              'warning',
+              warnCode,
+              file,
+              `Pinned map: ${name}=${v} (would be a hard layout error without pinned nodes).`,
+              undefined,
+              'Unpin nodes or adjust positions to resolve.',
+            ),
+          );
+        }
+      } else {
+        report.errors.push(
+          issue(
+            'error',
+            'E-HARD-LAYOUT',
+            file,
+            `Layout has hard violations: ${detail}.`,
+            undefined,
+            'These indicate overlapping nodes/groups, edges crossing nodes, or label collisions. Fix content or report a layout engine bug.',
+          ),
+        );
+        report.ok = false;
+      }
+    }
+  }
+
+  // Re-sort after adding layout issues.
+  const sortIssues = (a: Issue, b: Issue): number =>
+    a.file.localeCompare(b.file) || (a.line ?? 0) - (b.line ?? 0) || a.code.localeCompare(b.code);
+  report.errors.sort(sortIssues);
+  report.warnings.sort(sortIssues);
+  if (report.errors.length > 0) report.ok = false;
+  if (opts.strict && report.warnings.length > 0) report.ok = false;
+
+  return report;
 }
 
 export function validateProject(project: Project, opts: CheckOptions = {}): CheckReport {

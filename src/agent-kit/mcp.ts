@@ -7,7 +7,7 @@ import { loadAllMaps } from '../core/maps.js';
 import { buildContext } from '../core/context.js';
 import { applyOpsToFile } from '../core/writer.js';
 import { applyOpsToContent, OpsError } from '../core/ops.js';
-import { validateProject } from '../core/validate.js';
+import { validateProject, validateProjectAsync } from '../core/validate.js';
 import { computeSuggestions } from '../core/suggest.js';
 import { computeChangeDelta, commitBaselines } from '../core/change-delta.js';
 import { addChangeEntry } from '../core/changes.js';
@@ -198,7 +198,7 @@ export async function runMcpServer(rootInput?: string): Promise<void> {
           return;
         }
         if (name === 'vibemap_check') {
-          const report = validateProject(project, { strict: args.strict === true });
+          const report = await validateProjectAsync(project, { strict: args.strict === true });
           result(id, textResult(JSON.stringify(report, null, 2)));
           return;
         }

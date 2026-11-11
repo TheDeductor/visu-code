@@ -140,7 +140,7 @@ interface HookConfig {
 }
 
 function hookCommand(event: string): string {
-  return `npx --no-install vibemap hook ${event}`;
+  return `(command -v vibemap >/dev/null 2>&1 && vibemap hook ${event}) || npx --no-install vibemap hook ${event}`;
 }
 
 /** Merge VibeMap hooks into Claude Code settings without touching unrelated hooks. */
@@ -209,7 +209,14 @@ export function installGitHooks(root: string): AgentWriteResult[] {
 ${GIT_HOOK_MARKER}
 # Blocks commits that leave VibeMap invalid. Set VIBEMAP_SKIP_HOOKS=1 to bypass.
 if [ "$VIBEMAP_SKIP_HOOKS" = "1" ]; then exit 0; fi
-npx --no-install vibemap check || {
+if command -v vibemap >/dev/null 2>&1; then
+  VIBEMAP_BIN="vibemap"
+elif [ -x "./node_modules/.bin/vibemap" ]; then
+  VIBEMAP_BIN="./node_modules/.bin/vibemap"
+else
+  VIBEMAP_BIN="npx --no-install vibemap"
+fi
+$VIBEMAP_BIN check || {
   echo ""
   echo "VibeMap check failed. Fix the errors above, or commit with VIBEMAP_SKIP_HOOKS=1."
   exit 1
@@ -221,7 +228,14 @@ npx --no-install vibemap check || {
       `#!/bin/sh
 ${GIT_HOOK_MARKER}
 if [ "$VIBEMAP_SKIP_HOOKS" = "1" ]; then exit 0; fi
-npx --no-install vibemap change seal --latest >/dev/null 2>&1 || true
+if command -v vibemap >/dev/null 2>&1; then
+  VIBEMAP_BIN="vibemap"
+elif [ -x "./node_modules/.bin/vibemap" ]; then
+  VIBEMAP_BIN="./node_modules/.bin/vibemap"
+else
+  VIBEMAP_BIN="npx --no-install vibemap"
+fi
+$VIBEMAP_BIN change seal --latest >/dev/null 2>&1 || true
 `,
     ],
   ];

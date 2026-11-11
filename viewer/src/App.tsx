@@ -458,9 +458,11 @@ export function App(): React.ReactElement {
 
   const viewDetail = useMemo<MapDetail | null>(() => {
     if (!detail) return null;
-    if (!historical) return detail;
-    return { ...detail, map: historical.map, evidence: {}, locked: [], error: null, stale: false, rev: historical.rev };
-  }, [detail, historical]);
+    const base = historical
+      ? { ...detail, map: historical.map, evidence: {}, locked: [], error: null, stale: false, rev: historical.rev }
+      : detail;
+    return { ...base, layout: historical ? null : (sidecar ?? base.layout) };
+  }, [detail, historical, sidecar]);
 
   const canvasFocus = useMemo(() => {
     if (walkthrough.active && viewDetail?.map.type === 'graph') {
@@ -481,6 +483,7 @@ export function App(): React.ReactElement {
     (next: MapLayoutSidecar, immediate = false) => {
       sidecarRef.current = next;
       setSidecar(next);
+      setDetail((prev) => (prev ? { ...prev, layout: next } : null));
       lastLocalLayout.current = Date.now();
       if (layoutSaveTimer.current) window.clearTimeout(layoutSaveTimer.current);
       const run = (): void => {
@@ -504,7 +507,7 @@ export function App(): React.ReactElement {
 
   const moveNode = useCallback(
     (id: string, x: number, y: number, w: number, h: number) => {
-      const current = sidecarRef.current;
+      const current = sidecarRef.current ?? (detailRef.current ? emptyLayout(detailRef.current.id) : null);
       if (!current) return;
       const next: MapLayoutSidecar = { ...current, nodes: { ...current.nodes, [id]: { x, y, w, h, pinned: true } } };
       persistLayout(next);
@@ -514,7 +517,7 @@ export function App(): React.ReactElement {
 
   const moveAnnotation = useCallback(
     (id: string, x: number, y: number) => {
-      const current = sidecarRef.current;
+      const current = sidecarRef.current ?? (detailRef.current ? emptyLayout(detailRef.current.id) : null);
       if (!current) return;
       const next: MapLayoutSidecar = {
         ...current,
@@ -525,22 +528,37 @@ export function App(): React.ReactElement {
     [persistLayout],
   );
 
+  const removeAnnotation = useCallback(
+    (id: string) => {
+      const current = sidecarRef.current ?? (detailRef.current ? emptyLayout(detailRef.current.id) : null);
+      if (!current) return;
+      const next: MapLayoutSidecar = {
+        ...current,
+        annotations: (current.annotations ?? []).filter((annotation) => annotation.id !== id),
+      };
+      persistLayout(next, true);
+      toast('Sticky note removed.', 'ok');
+    },
+    [persistLayout, toast],
+  );
+
   const addSticky = useCallback(
     async (text: string) => {
-      const current = sidecarRef.current;
+      const current = sidecarRef.current ?? (detailRef.current ? emptyLayout(detailRef.current.id) : null);
       if (!current) return;
+      const count = current.annotations?.length ?? 0;
       const annotation: VibeAnnotation = {
         id: `sticky-${Date.now().toString(36)}`,
         type: 'sticky',
-        x: 60 + ((current.annotations?.length ?? 0) % 4) * 24,
-        y: 60 + ((current.annotations?.length ?? 0) % 4) * 20,
+        x: 60 + (count % 6) * 28,
+        y: 60 + (count % 6) * 24,
         w: 180,
         h: 100,
         text,
       };
       const next: MapLayoutSidecar = { ...current, annotations: [...(current.annotations ?? []), annotation] };
       persistLayout(next, true);
-      toast('Sticky note added. Drag it in edit mode.', 'ok');
+      toast('Sticky note added. You can drag it anywhere.', 'ok');
     },
     [persistLayout, toast],
   );
@@ -1175,6 +1193,7 @@ export function App(): React.ReactElement {
                     onSelectNode={(id) => setSelectedNodeId(id)}
                     onMoveNode={moveNode}
                     onMoveAnnotation={moveAnnotation}
+                    onRemoveAnnotation={removeAnnotation}
                     connectMode={connectMode && !historical}
                     connectStart={connectFrom}
                     onConnectNode={onConnectNode}

@@ -42,6 +42,7 @@ interface CanvasProps {
   onSelectNode: (id: string | null) => void;
   onMoveNode: (id: string, x: number, y: number, w: number, h: number) => void;
   onMoveAnnotation: (id: string, x: number, y: number) => void;
+  onRemoveAnnotation?: (id: string) => void;
   connectMode: boolean;
   connectStart: string | null;
   onConnectNode: (id: string) => void;
@@ -227,6 +228,7 @@ export function MapCanvas(props: CanvasProps): React.ReactElement {
     onSelectNode,
     onMoveNode,
     onMoveAnnotation,
+    onRemoveAnnotation,
     connectMode,
     connectStart,
     onConnectNode,
@@ -381,6 +383,11 @@ export function MapCanvas(props: CanvasProps): React.ReactElement {
     if (draggingAnnotation) {
       onMoveAnnotation(draggingAnnotation.id, Math.round(draggingAnnotation.x + draggingAnnotation.dx), Math.round(draggingAnnotation.y + draggingAnnotation.dy));
       setDraggingAnnotation(null);
+      try {
+        event.currentTarget.releasePointerCapture(event.pointerId);
+      } catch {
+        // pointer already released
+      }
     }
     if (panning) {
       setPanning(null);
@@ -407,7 +414,7 @@ export function MapCanvas(props: CanvasProps): React.ReactElement {
 
   const annotationPointerDown = (event: React.PointerEvent<SVGGElement>, annotation: VibeAnnotation): void => {
     event.stopPropagation();
-    if (mode !== 'edit' || readOnly) return;
+    if (readOnly) return;
     setDraggingAnnotation({
       id: annotation.id,
       startClientX: event.clientX,
@@ -417,6 +424,7 @@ export function MapCanvas(props: CanvasProps): React.ReactElement {
       dx: 0,
       dy: 0,
     });
+    (event.currentTarget.ownerSVGElement as SVGSVGElement | null)?.setPointerCapture(event.pointerId);
   };
 
   const zoomText = `${Math.round(viewport.zoom * 100)}%`;
@@ -593,10 +601,45 @@ export function MapCanvas(props: CanvasProps): React.ReactElement {
             if (annotation.type === 'sticky' || annotation.type === 'text') {
               const w = annotation.w ?? 160;
               const h = annotation.h ?? 92;
+              const isDraggingThis = annotationDrag?.id === annotation.id;
               return (
-                <g key={annotation.id} className="vm-annotation" onPointerDown={(event) => annotationPointerDown(event, annotation)} onDoubleClick={() => onSelectNode(null)} style={{ cursor: mode === 'edit' ? 'grab' : 'default' }}>
-                  {annotation.type === 'sticky' ? <rect x={x} y={y} width={w} height={h} rx={3} fill="#fff3bf" stroke="#f08c00" strokeWidth={1.5} /> : null}
-                  <text x={x + 10} y={y + 22} fontSize={12.5} fill="#3b2f00">
+                <g
+                  key={annotation.id}
+                  className="vm-annotation"
+                  onPointerDown={(event) => annotationPointerDown(event, annotation)}
+                  onDoubleClick={() => onSelectNode(null)}
+                  style={{ cursor: readOnly ? 'default' : isDraggingThis ? 'grabbing' : 'grab' }}
+                >
+                  {annotation.type === 'sticky' ? (
+                    <>
+                      <rect
+                        x={x}
+                        y={y}
+                        width={w}
+                        height={h}
+                        rx={4}
+                        fill="#fff3bf"
+                        stroke="#f08c00"
+                        strokeWidth={1.5}
+                        style={{ filter: 'drop-shadow(0 2px 5px rgba(0,0,0,0.12))' }}
+                      />
+                      {!readOnly && onRemoveAnnotation ? (
+                        <g
+                          className="vm-annotation-close"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onRemoveAnnotation(annotation.id);
+                          }}
+                          onPointerDown={(e) => e.stopPropagation()}
+                          style={{ cursor: 'pointer' }}
+                        >
+                          <circle cx={x + w - 12} cy={y + 12} r={8} fill="rgba(0,0,0,0.12)" />
+                          <text x={x + w - 12} y={y + 16} fontSize={12} textAnchor="middle" fill="#5c3b00" fontWeight="bold">×</text>
+                        </g>
+                      ) : null}
+                    </>
+                  ) : null}
+                  <text x={x + 10} y={y + 22} fontSize={12.5} fill="#3b2f00" style={{ userSelect: 'none', pointerEvents: 'none' }}>
                     {wrapText(annotation.text ?? '', w - 20, 12.5)
                       .slice(0, 5)
                       .map((line, index) => (
@@ -713,7 +756,7 @@ function SequenceScene({ layout, theme, markerId, dimmed }: { layout: SequenceLa
               <line x1={x1} y1={step.y} x2={x2} y2={step.y} stroke="#343a40" strokeWidth={1.8} markerEnd={`url(#${markerId})`} />
             )}
             <text
-              x={(x1 + x2) / 2}
+              x={step.labelX ?? (x1 + x2) / 2}
               y={step.y - 12}
               textAnchor="middle"
               fontSize={12}

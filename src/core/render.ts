@@ -121,7 +121,7 @@ export function renderSvg(map: VibeMap, theme: Theme, layout: LayoutResult, evid
       const x1 = from.x + from.w / 2;
       const x2 = to.x + to.w / 2;
       parts.push(`<path d="M ${x1} ${step.y} L ${x2} ${step.y}" fill="none" stroke="#343a40" stroke-width="1.8" marker-end="url(#arrow)"/>`);
-      parts.push(`<text x="${(x1 + x2) / 2}" y="${step.y - 10}" text-anchor="middle" font-size="12" fill="#343a40" stroke="${theme.colors.background}" stroke-width="4" paint-order="stroke" stroke-linejoin="round">${esc(step.label)}</text>`);
+      parts.push(`<text x="${step.labelX ?? (x1 + x2) / 2}" y="${step.y - 10}" text-anchor="middle" font-size="12" fill="#343a40" stroke="${theme.colors.background}" stroke-width="4" paint-order="stroke" stroke-linejoin="round">${esc(step.label)}</text>`);
     }
   } else if (layout.type === 'erd') {
     for (const relation of layout.relations) parts.push(edgeSvg(relation, theme));

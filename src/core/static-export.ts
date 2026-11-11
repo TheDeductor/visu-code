@@ -10,7 +10,7 @@ import { renderSvg } from './render.js';
 import { listChanges } from './changes.js';
 import { listNotes } from './notes.js';
 import { readPhases } from './project.js';
-import { validateProject } from './validate.js';
+import { validateProject, validateProjectAsync } from './validate.js';
 import { computeCoverage } from './suggest.js';
 import { toPosix } from './paths.js';
 
@@ -32,14 +32,14 @@ export interface StaticExportResult {
   files: string[];
 }
 
-export function staticExport(project: Project, outDir: string): StaticExportResult {
+export async function staticExport(project: Project, outDir: string): Promise<StaticExportResult> {
   const out = path.resolve(outDir);
   if (out === path.resolve(project.root) || out === path.resolve(project.vibemapDir)) {
     throw new Error('Refusing to export into the project root or .vibemap/. Choose a subdirectory such as ./site.');
   }
   fs.mkdirSync(path.join(out, 'maps'), { recursive: true });
   const { maps } = loadAllMaps(project);
-  const report = validateProject(project, { strict: false });
+  const report = await validateProjectAsync(project, { strict: false });
   const facts = loadFacts(project);
   const changes = listChanges(project);
   const notes = listNotes(project, true);

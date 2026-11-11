@@ -303,6 +303,8 @@ export interface Theme {
   nodeMargin: number;
   minNodeSize: { w: number; h: number };
   maxLabelWidth: number;
+  /** Layout engine: 'legacy' (default) or 'elk' (opt-in). */
+  layoutEngine: 'legacy' | 'elk';
   colors: {
     ui: string;
     api: string;
@@ -622,6 +624,7 @@ export interface SequenceStepLayout {
   label: string;
   kind: string;
   reverse: boolean;
+  labelX?: number;
 }
 
 export interface SequenceFragmentLayout {

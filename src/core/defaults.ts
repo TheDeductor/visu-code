@@ -67,6 +67,7 @@ export function defaultTheme(): Theme {
     nodeMargin: 28,
     minNodeSize: { w: 140, h: 56 },
     maxLabelWidth: 220,
+    layoutEngine: 'legacy',
     colors: {
       ui: '#a5d8ff',
       api: '#d0bfff',
@@ -155,6 +156,7 @@ groupSep: 40
 nodeMargin: 28
 minNodeSize: { w: 140, h: 56 }
 maxLabelWidth: 220
+layoutEngine: legacy  # legacy | elk
 colors:
   ui: "#a5d8ff"
   api: "#d0bfff"

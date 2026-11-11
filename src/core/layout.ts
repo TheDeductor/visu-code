@@ -847,7 +847,8 @@ function layoutGraph(map: GraphMap, theme: Theme, options: LayoutOptions): Graph
     getSuperId,
     horizontal,
     layoutGroups,
-    theme
+    theme,
+    warnings
   );
 
   const nodeBoxes: LayoutBox[] = boxes.map((box) => {
@@ -1242,7 +1243,8 @@ function routeAllEdges(
   getSuperId: (nodeId: string) => string,
   horizontal: boolean,
   groups: LayoutGroup[],
-  theme: Theme
+  theme: Theme,
+  warnings?: string[]
 ): LayoutEdge[] {
   type Side = 'left' | 'right' | 'top' | 'bottom';
 
@@ -1555,7 +1557,7 @@ function routeAllEdges(
 
       if (hasCrossing) {
         const corridorY = Math.min(from.y, to.y) < (minYAll + maxYAll) / 2 ? minYAll - 32 : maxYAll + 32;
-        polyline = simplifyPolyline([
+        const candidate = simplifyPolyline([
           p.start,
           startStub,
           { x: startStub.x, y: corridorY },
@@ -1563,6 +1565,24 @@ function routeAllEdges(
           endStub,
           p.end,
         ]);
+        let stillCrosses = false;
+        for (let i = 0; i < candidate.length - 1; i++) {
+          for (const obs of obstacles) {
+            if (segmentHitsBox(candidate[i]!, candidate[i + 1]!, obs)) {
+              stillCrosses = true;
+              break;
+            }
+          }
+          if (stillCrosses) break;
+        }
+        if (stillCrosses && (from.pinned || to.pinned)) {
+          polyline = [p.start, p.end];
+          warnings?.push(
+            `W-PINNED-ROUTE: edge "${edge.id}" connecting pinned node could not avoid obstacles; falling back to direct route.`
+          );
+        } else {
+          polyline = candidate;
+        }
       }
     }
 
@@ -1832,21 +1852,14 @@ function layoutSequence(map: Extract<VibeMap, { type: 'sequence' }>, theme: Them
     if (minIdx === maxIdx) continue;
 
     const labelW = measureText(step.label, 13);
-    const reqSpan = labelW + 24;
+    const reqSpan = Math.max(60, labelW + 24);
 
     if (maxIdx === minIdx + 1) {
       pairGaps[minIdx] = Math.max(pairGaps[minIdx]!, reqSpan);
     } else {
-      let currentSpan = 0;
-      for (let k = minIdx; k < maxIdx; k++) {
-        currentSpan += (dims[k]!.w / 2) + pairGaps[k]! + (dims[k + 1]!.w / 2);
-      }
-      if (currentSpan < reqSpan) {
-        const extraPerGap = (reqSpan - currentSpan) / (maxIdx - minIdx);
-        for (let k = minIdx; k < maxIdx; k++) {
-          pairGaps[k] = Math.ceil(pairGaps[k]! + extraPerGap);
-        }
-      }
+      // For multi-participant spans, ensure the middle interval has space for the label
+      const midInterval = Math.floor((minIdx + maxIdx - 1) / 2);
+      pairGaps[midInterval] = Math.max(pairGaps[midInterval]!, reqSpan);
     }
   }
 
@@ -1881,6 +1894,43 @@ function layoutSequence(map: Extract<VibeMap, { type: 'sequence' }>, theme: Them
     const thisY = currentStepY;
     currentStepY += rowGap;
 
+    const pFrom = pos.get(step.from);
+    const pTo = pos.get(step.to);
+    const x1 = pFrom ? pFrom.x + pFrom.w / 2 : 0;
+    const x2 = pTo ? pTo.x + pTo.w / 2 : 0;
+    let chosenLabelX = round((x1 + x2) / 2);
+
+    if (oFrom !== undefined && oTo !== undefined && Math.abs(oFrom - oTo) > 1) {
+      const minIdx = Math.min(oFrom, oTo);
+      const maxIdx = Math.max(oFrom, oTo);
+      const labelW = measureText(step.label, 12);
+      const neededWidth = labelW + 24;
+      const msgCenter = (x1 + x2) / 2;
+      let bestX: number | undefined;
+      let bestDist = Infinity;
+
+      for (let k = minIdx; k < maxIdx; k++) {
+        const pk = pos.get(participants[k]!.id)!;
+        const pkNext = pos.get(participants[k + 1]!.id)!;
+        const lineK = pk.x + pk.w / 2;
+        const lineKNext = pkNext.x + pkNext.w / 2;
+        const intervalWidth = lineKNext - lineK;
+
+        if (intervalWidth >= neededWidth) {
+          const mid = (lineK + lineKNext) / 2;
+          const dist = Math.abs(mid - msgCenter);
+          if (dist < bestDist) {
+            bestDist = dist;
+            bestX = mid;
+          }
+        }
+      }
+
+      if (bestX !== undefined) {
+        chosenLabelX = round(bestX);
+      }
+    }
+
     return {
       index,
       from: step.from,
@@ -1889,6 +1939,7 @@ function layoutSequence(map: Extract<VibeMap, { type: 'sequence' }>, theme: Them
       label: step.label,
       kind: step.kind ?? 'call',
       reverse: (oFrom ?? 0) > (oTo ?? 0),
+      labelX: chosenLabelX,
     };
   });
 
