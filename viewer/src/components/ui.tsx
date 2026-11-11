@@ -1,4 +1,5 @@
 import React, { useEffect } from 'react';
+import { Badge as AstryxBadge } from '@astryxdesign/core/Badge';
 import { IconButton } from '@astryxdesign/core/IconButton';
 import { classNames } from '../util';
 
@@ -50,9 +51,17 @@ export function Badge({
   tone?: 'neutral' | 'ok' | 'warn' | 'error' | 'info' | 'planned';
   title?: string;
 }): React.ReactElement {
+  const variantMap: Record<string, 'neutral' | 'info' | 'success' | 'warning' | 'error' | 'purple'> = {
+    neutral: 'neutral',
+    ok: 'success',
+    warn: 'warning',
+    error: 'error',
+    info: 'info',
+    planned: 'purple',
+  };
   return (
-    <span className={`badge badge-${tone}`} title={title}>
-      {children}
+    <span title={title} className="badge-wrap">
+      <AstryxBadge label={children} variant={variantMap[tone] ?? 'neutral'} />
     </span>
   );
 }

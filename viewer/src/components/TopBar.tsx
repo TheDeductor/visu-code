@@ -1,4 +1,5 @@
 import React from 'react';
+import { Badge } from '@astryxdesign/core/Badge';
 import { Button } from '@astryxdesign/core/Button';
 import { IconButton } from '@astryxdesign/core/IconButton';
 import { Tab, TabList } from '@astryxdesign/core/TabList';
@@ -84,8 +85,10 @@ export function TopBar({
       <div className="topbar-actions">
         <IconButton label="Search (Ctrl/Cmd+K)" tooltip="Search (Ctrl/Cmd+K)" icon={<span aria-hidden="true">⌕</span>} variant="ghost" size="sm" onClick={onSearch} />
         <button type="button" className={classNames('check-pill', errors ? 'has-errors' : warnings ? 'has-warnings' : 'is-ok')} onClick={onProblems} title="Validation problems">
-          {errors ? `${errors} error${errors === 1 ? '' : 's'}` : warnings ? `${warnings} warning${warnings === 1 ? '' : 's'}` : 'check ok'}
-          {problemsOpen ? ' ▾' : ' ▸'}
+          <Badge
+            label={`${errors ? `${errors} error${errors === 1 ? '' : 's'}` : warnings ? `${warnings} warning${warnings === 1 ? '' : 's'}` : 'check ok'} ${problemsOpen ? '▾' : '▸'}`}
+            variant={errors ? 'error' : warnings ? 'warning' : 'success'}
+          />
         </button>
         <span className={`live-dot live-${live}`} title={live === 'live' ? 'Live updates connected' : live === 'connecting' ? 'Connecting…' : 'Disconnected'} />
         <button type="button" className={classNames('chip', beginner && 'active')} onClick={() => onBeginner(!beginner)} title="Beginner mode (B)">

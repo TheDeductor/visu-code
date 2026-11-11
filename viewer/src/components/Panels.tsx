@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Button } from '@astryxdesign/core/Button';
 import { IconButton } from '@astryxdesign/core/IconButton';
+import { Token } from '@astryxdesign/core/Token';
 import type { ChangeEntry, CheckReport, CoverageReport, HistoryPoint, Issue, MapSummary, Phase, Suggestion } from '@core/types';
 import { api, type NoteEntry, type PhaseProgress } from '../api';
 import { Badge, EmptyState, ProgressBar, Spinner } from './ui';
@@ -43,9 +44,9 @@ export function ChangesPanel({
               {change.commit ? <Badge tone="ok">sealed</Badge> : <Badge tone="warn">unsealed</Badge>}
             </div>
             <div className="delta-chips">
-              <span className="delta add">+{change.delta.added_nodes.length}</span>
-              <span className="delta mod">~{change.delta.modified_nodes.length}</span>
-              <span className="delta rem">−{change.delta.removed_nodes.length}</span>
+              <Token label={`+${change.delta.added_nodes.length}`} color="green" size="sm" />
+              <Token label={`~${change.delta.modified_nodes.length}`} color="orange" size="sm" />
+              <Token label={`−${change.delta.removed_nodes.length}`} color="red" size="sm" />
               <span className="muted">{change.maps.join(', ')}</span>
             </div>
           </button>
@@ -78,9 +79,7 @@ export function ChangesPanel({
           ))}
           <div className="change-detail-actions">
             {selected.maps.map((map) => (
-              <button key={map} type="button" className="chip" onClick={() => onOpenMap(map)}>
-                {map}
-              </button>
+              <Token key={map} label={map} color="blue" size="sm" onClick={() => onOpenMap(map)} />
             ))}
           </div>
         </article>
@@ -535,9 +534,13 @@ export function CoveragePanel({
         {coverage.unverified.length ? (
           <div className="chip-list">
             {coverage.unverified.map((item) => (
-              <button key={`${item.map}-${item.node}`} type="button" className="chip" onClick={() => onOpenNode(item.map, item.node)}>
-                {item.map}#{item.node} <span className={`ev-dot ${item.status}`} />
-              </button>
+              <Token
+                key={`${item.map}-${item.node}`}
+                label={`${item.map}#${item.node} (${item.status})`}
+                color={item.status === 'stale' ? 'red' : item.status === 'planned' ? 'purple' : 'yellow'}
+                size="sm"
+                onClick={() => onOpenNode(item.map, item.node)}
+              />
             ))}
           </div>
         ) : (
