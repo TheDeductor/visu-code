@@ -24,9 +24,13 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "check": "npm run typecheck && npm run test",
+    "astryx": "node node_modules/@astryxdesign/cli/clients/cli/bin/astryx.mjs",
     "start": "node dist/cli.js"
   },
   "dependencies": {
+    "@astryxdesign/core": "0.7.13",
+    "@astryxdesign/theme-neutral": "0.7.13",
+    "@stylexjs/stylex": "0.19.1",
     "chokidar": "^4.0.3",
     "commander": "^14.0.0",
     "elkjs": "^0.12.1",
@@ -38,6 +42,7 @@
     "zod-to-json-schema": "^3.25.0"
   },
   "devDependencies": {
+    "@astryxdesign/cli": "0.7.13",
     "@types/node": "^24.10.0",
     "@types/react": "^19.2.2",
     "@types/react-dom": "^19.2.2",
