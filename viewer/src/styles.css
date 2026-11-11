@@ -424,11 +424,11 @@ span.muted.small {
 }
 
 .app-body.sidebar-collapsed {
-  grid-template-columns: 0px minmax(0, 1fr) 330px;
+  grid-template-columns: minmax(0, 1fr) 330px;
 }
 
 .app-body.sidebar-collapsed.no-inspector {
-  grid-template-columns: 0px minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr);
 }
 
 .app-body.sidebar-collapsed .sidebar {
