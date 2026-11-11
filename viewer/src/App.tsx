@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Button } from '@astryxdesign/core/Button';
 import { IconButton } from '@astryxdesign/core/IconButton';
 import { Tab, TabList } from '@astryxdesign/core/TabList';
+import { AlertDialog } from '@astryxdesign/core/AlertDialog';
 import type {
   ChangeEntry,
   CheckReport,
@@ -603,6 +604,8 @@ export function App(): React.ReactElement {
     [loadDetail, refreshMaps, toast],
   );
 
+  const [deleteConfirmNodeId, setDeleteConfirmNodeId] = useState<string | null>(null);
+
   const updateNode = useCallback(
     async (id: string, set: Partial<VibeNode>) => {
       await runOps([{ op: 'update_node', id, set }]);
@@ -612,15 +615,18 @@ export function App(): React.ReactElement {
     [runOps, toast],
   );
 
-  const deleteNode = useCallback(
-    async (id: string) => {
-      if (!window.confirm('Delete this node and all of its edges? This is recorded in the change journal.')) return;
-      await runOps([{ op: 'remove_node', id }]);
-      setSelectedNodeId(null);
-      toast('Node deleted.', 'ok');
-    },
-    [runOps, toast],
-  );
+  const deleteNode = useCallback(async (id: string) => {
+    setDeleteConfirmNodeId(id);
+  }, []);
+
+  const confirmDeleteNode = useCallback(async () => {
+    if (!deleteConfirmNodeId) return;
+    const id = deleteConfirmNodeId;
+    setDeleteConfirmNodeId(null);
+    await runOps([{ op: 'remove_node', id }]);
+    setSelectedNodeId(null);
+    toast('Node deleted.', 'ok');
+  }, [deleteConfirmNodeId, runOps, toast]);
 
   const toggleLock = useCallback(
     async (id: string, locked: boolean) => {
@@ -1319,6 +1325,17 @@ export function App(): React.ReactElement {
         ) : null}
       </div>
       {toastState ? <Toast message={toastState.message} tone={toastState.tone} onClose={() => setToastState(null)} /> : null}
+      <AlertDialog
+        isOpen={Boolean(deleteConfirmNodeId)}
+        onOpenChange={(open) => {
+          if (!open) setDeleteConfirmNodeId(null);
+        }}
+        title="Delete node?"
+        description="Delete this node and all of its edges? This is recorded in the change journal."
+        actionLabel="Delete"
+        actionVariant="destructive"
+        onAction={confirmDeleteNode}
+      />
       {modal?.kind === 'new-map' ? <NewMapModal onClose={() => setModal(null)} onCreate={createNewMap} /> : null}
       {modal?.kind === 'add-node' ? <AddNodeModal onClose={() => setModal(null)} onCreate={createNode} startConnect={connectFrom} /> : null}
       {modal?.kind === 'edge' ? <EdgeModal from={modal.from} to={modal.to} onClose={() => setModal(null)} onCreate={createEdge} /> : null}

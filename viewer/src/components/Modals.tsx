@@ -2,6 +2,8 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Button } from '@astryxdesign/core/Button';
 import { IconButton } from '@astryxdesign/core/IconButton';
 import { Selector } from '@astryxdesign/core/Selector';
+import { CommandPalette } from '@astryxdesign/core/CommandPalette';
+import type { SearchSource, SearchableItem } from '@astryxdesign/core/Typeahead';
 import type { NodeKind, NodeStatus, ProjectConfig } from '@core/types';
 import { EDGE_KINDS, NODE_KINDS, NODE_STATUSES } from '@core/types';
 import { api, type ProjectInfo, type SearchResult } from '../api';
@@ -473,65 +475,59 @@ export function SearchModal({
   onClose: () => void;
   onPick: (result: SearchResult) => void;
 }): React.ReactElement {
-  const [query, setQuery] = useState(initial);
-  const [results, setResults] = useState<SearchResult[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [active, setActive] = useState(0);
-  const timer = useRef<number | undefined>(undefined);
+  const itemsMap = useRef<Map<string, SearchResult>>(new Map());
 
-  useEffect(() => {
-    if (timer.current) window.clearTimeout(timer.current);
-    if (!query.trim()) {
-      setResults([]);
-      return;
-    }
-    timer.current = window.setTimeout(() => {
-      setLoading(true);
-      api
-        .search(query)
-        .then((value) => {
-          setResults(value.results);
-          setActive(0);
-        })
-        .catch(() => setResults([]))
-        .finally(() => setLoading(false));
-    }, 140);
-    return () => {
-      if (timer.current) window.clearTimeout(timer.current);
-    };
-  }, [query]);
+  const searchSource = useMemo<SearchSource<SearchableItem<SearchResult>>>(
+    () => ({
+      search: async (query: string) => {
+        if (!query.trim()) return [];
+        try {
+          const value = await api.search(query);
+          return value.results.map((result) => {
+            const id = `${result.type}-${result.id}`;
+            itemsMap.current.set(id, result);
+            return {
+              id,
+              label: result.label,
+              auxiliaryData: result,
+            };
+          });
+        } catch {
+          return [];
+        }
+      },
+      bootstrap: () => [],
+    }),
+    [],
+  );
 
   return (
-    <Modal title="Search" onClose={onClose} wide>
-      <input
-        autoFocus
-        className="search-big"
-        value={query}
-        onChange={(event) => setQuery(event.target.value)}
-        onKeyDown={(event) => {
-          if (event.key === 'ArrowDown') {
-            event.preventDefault();
-            setActive((index) => Math.min(results.length - 1, index + 1));
-          } else if (event.key === 'ArrowUp') {
-            event.preventDefault();
-            setActive((index) => Math.max(0, index - 1));
-          } else if (event.key === 'Enter' && results[active]) {
-            onPick(results[active]!);
-          }
-        }}
-        placeholder="Search maps, nodes, changes, notes…"
-      />
-      <div className="search-results">
-        {loading ? <Spinner label="Searching…" /> : null}
-        {!loading && query && !results.length ? <p className="muted">No matches.</p> : null}
-        {results.map((result, index) => (
-          <button key={`${result.type}-${result.id}`} type="button" className={classNames('search-result', active === index && 'active')} onClick={() => onPick(result)} onMouseEnter={() => setActive(index)}>
-            <Badge tone={result.type === 'node' ? 'info' : result.type === 'change' ? 'ok' : 'neutral'}>{result.type}</Badge>
-            <span>{result.label}</span>
-            <span className="muted">{result.map ?? result.id}</span>
-          </button>
-        ))}
-      </div>
-    </Modal>
+    <CommandPalette
+      isOpen={true}
+      onOpenChange={(open) => {
+        if (!open) onClose();
+      }}
+      searchSource={searchSource}
+      onValueChange={(val) => {
+        const result = itemsMap.current.get(val);
+        if (result) {
+          onPick(result);
+          onClose();
+        }
+      }}
+      label="Search"
+      emptySearchText="No matches."
+      emptyBootstrapText="Type to search maps, nodes, changes, notes…"
+      width={640}
+      renderItem={(item) => (
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%' }}>
+          <Badge tone={item.auxiliaryData?.type === 'node' ? 'info' : item.auxiliaryData?.type === 'change' ? 'ok' : 'neutral'}>
+            {item.auxiliaryData?.type ?? 'item'}
+          </Badge>
+          <span style={{ flex: 1, fontWeight: 500 }}>{item.label}</span>
+          <span className="muted small">{item.auxiliaryData?.map ?? item.auxiliaryData?.id}</span>
+        </div>
+      )}
+    />
   );
 }

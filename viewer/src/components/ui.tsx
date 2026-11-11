@@ -1,4 +1,5 @@
-import React, { useEffect } from 'react';
+import React from 'react';
+import { Dialog, DialogHeader } from '@astryxdesign/core/Dialog';
 import { Badge as AstryxBadge } from '@astryxdesign/core/Badge';
 import { IconButton } from '@astryxdesign/core/IconButton';
 import { classNames } from '../util';
@@ -18,27 +19,25 @@ export function Modal({
   footer?: React.ReactNode;
   wide?: boolean;
 }): React.ReactElement {
-  useEffect(() => {
-    const onKey = (event: KeyboardEvent): void => {
-      if (event.key === 'Escape') onClose();
-    };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [onClose]);
   return (
-    <div className="modal-backdrop" role="presentation" onMouseDown={(event) => event.target === event.currentTarget && onClose()}>
-      <div className={classNames('modal', wide && 'modal-wide')} role="dialog" aria-modal="true" aria-label={title}>
-        <header className="modal-head">
-          <div>
-            <h2>{title}</h2>
-            {subtitle ? <p>{subtitle}</p> : null}
-          </div>
-          <IconButton label="Close" icon={<span aria-hidden="true">×</span>} variant="ghost" size="sm" onClick={onClose} />
-        </header>
-        <div className="modal-body">{children}</div>
-        {footer ? <footer className="modal-foot">{footer}</footer> : null}
-      </div>
-    </div>
+    <Dialog
+      isOpen={true}
+      onOpenChange={(open) => {
+        if (!open) onClose();
+      }}
+      width={wide ? 720 : 480}
+    >
+      <DialogHeader
+        title={title}
+        subtitle={subtitle}
+        hasDivider
+        onOpenChange={(open) => {
+          if (!open) onClose();
+        }}
+      />
+      <div className="modal-body">{children}</div>
+      {footer ? <footer className="modal-foot">{footer}</footer> : null}
+    </Dialog>
   );
 }
 
