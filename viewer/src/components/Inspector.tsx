@@ -1,7 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Button } from '@astryxdesign/core/Button';
 import { IconButton } from '@astryxdesign/core/IconButton';
-import { Card } from '@astryxdesign/core/Card';
 import { List, ListItem } from '@astryxdesign/core/List';
 import { Collapsible } from '@astryxdesign/core/Collapsible';
 import type { ChangeEntry, CodeRef, NodeKind, NodeStatus, VibeNode } from '@core/types';
@@ -9,6 +8,7 @@ import { NODE_KINDS, NODE_STATUSES } from '@core/types';
 import { kindLabel } from '@core/theme';
 import { api, type MapDetail } from '../api';
 import { Badge } from './ui';
+import { Icon } from './icons';
 import { classNames, copyText, shortPath } from '../util';
 
 export function Inspector({
@@ -41,7 +41,7 @@ export function Inspector({
   onCollapse?: () => void;
 }): React.ReactElement {
   const graph = detail?.map.type === 'graph' ? detail.map : null;
-  const node = graph?.nodes.find((n) => n.id === selectedNodeId) ?? null;
+  const node = graph?.nodes.find((item) => item.id === selectedNodeId) ?? null;
   const evidence = node ? detail?.evidence[node.id] : undefined;
   const [draft, setDraft] = useState<Partial<VibeNode>>({});
   const [refs, setRefs] = useState<Array<{ path: string; symbol: string }>>([]);
@@ -74,7 +74,7 @@ export function Inspector({
 
   const connections = useMemo(() => {
     if (!graph || !node) return { incoming: [], outgoing: [] };
-    const byId = new Map(graph.nodes.map((n) => [n.id, n]));
+    const byId = new Map(graph.nodes.map((item) => [item.id, item]));
     return {
       incoming: graph.edges.filter((edge) => edge.to === node.id).map((edge) => ({ edge, node: byId.get(edge.from) })),
       outgoing: graph.edges.filter((edge) => edge.from === node.id).map((edge) => ({ edge, node: byId.get(edge.to) })),
@@ -83,17 +83,19 @@ export function Inspector({
 
   const nodeChanges = useMemo(() => {
     if (!detail || !node) return [];
-    return changes.filter((change) => change.delta.added_nodes.includes(`${detail.id}#${node.id}`) || change.delta.modified_nodes.includes(`${detail.id}#${node.id}`)).slice(0, 5);
+    return changes
+      .filter((change) => change.delta.added_nodes.includes(`${detail.id}#${node.id}`) || change.delta.modified_nodes.includes(`${detail.id}#${node.id}`))
+      .slice(0, 5);
   }, [changes, detail, node]);
 
   if (!detail) {
     return (
       <aside className="inspector" aria-label="Inspector">
-        <div className="inspector-head" style={{ padding: '12px' }}>
-          <span className="eyebrow">Inspector</span>
-          {onCollapse && (
-            <IconButton label="Collapse inspector" tooltip="Collapse inspector" icon={<span aria-hidden="true">»</span>} variant="ghost" size="sm" onClick={onCollapse} />
-          )}
+        <div className="inspector-head">
+          <h2>Inspector</h2>
+          {onCollapse ? (
+            <IconButton label="Collapse inspector" tooltip="Collapse inspector" icon={<Icon name="panelRightOpen" />} variant="ghost" size="sm" onClick={onCollapse} />
+          ) : null}
         </div>
         <div className="inspector-placeholder">
           <p>Select a map to inspect it.</p>
@@ -111,38 +113,53 @@ export function Inspector({
       },
       {} as Record<string, number>,
     );
-    const nodes = map.type === 'graph' ? map.nodes : map.type === 'sequence' ? map.participants.map((p) => ({ id: p.id, label: p.label, kind: p.kind ?? 'actor', status: undefined, refs: p.refs })) : map.type === 'erd' ? map.entities.map((e) => ({ id: e.id, label: e.label, kind: 'database', status: undefined, refs: e.refs })) : [];
+    const nodes =
+      map.type === 'graph'
+        ? map.nodes
+        : map.type === 'sequence'
+          ? map.participants.map((participant) => ({ id: participant.id, label: participant.label, kind: participant.kind ?? 'actor', status: undefined, refs: participant.refs }))
+          : map.type === 'erd'
+            ? map.entities.map((entity) => ({ id: entity.id, label: entity.label, kind: 'database', status: undefined, refs: entity.refs }))
+            : [];
+    const edgeCount = map.type === 'graph' ? map.edges.length : map.type === 'sequence' ? map.steps.length : map.type === 'erd' ? map.relations.length : 0;
+
     return (
       <aside className="inspector" aria-label="Inspector">
         <div className="inspector-scroll">
           <div className="inspector-head">
             <div>
-              <span className="eyebrow">{map.type.toUpperCase()}</span>
               <h2>{map.title}</h2>
+              <div className="inspector-meta">
+                <span>{map.type === 'graph' ? 'Graph' : map.type === 'erd' ? 'Data model' : map.type === 'sequence' ? 'Sequence' : 'Mermaid'}</span>
+                <span>{map.level ?? 'unset'} level</span>
+              </div>
             </div>
-            {onCollapse && (
-              <IconButton label="Collapse inspector" tooltip="Collapse inspector" icon={<span aria-hidden="true">»</span>} variant="ghost" size="sm" onClick={onCollapse} />
-            )}
+            {onCollapse ? (
+              <IconButton label="Collapse inspector" tooltip="Collapse inspector" icon={<Icon name="panelRightOpen" />} variant="ghost" size="sm" onClick={onCollapse} />
+            ) : null}
           </div>
+
           <p className="map-summary">{map.summary || 'No summary yet. Ask an agent to add one.'}</p>
-          <div className="stat-grid">
-            <Card padding={2}>
+
+          <div className="stat-row">
+            <div>
               <strong>{nodes.length}</strong>
               <span>{map.type === 'erd' ? 'entities' : 'nodes'}</span>
-            </Card>
-            <Card padding={2}>
-              <strong>{map.type === 'graph' ? map.edges.length : map.type === 'sequence' ? map.steps.length : map.type === 'erd' ? map.relations.length : 0}</strong>
-              <span>edges</span>
-            </Card>
-            <Card padding={2}>
+            </div>
+            <div>
+              <strong>{edgeCount}</strong>
+              <span>{map.type === 'sequence' ? 'steps' : 'edges'}</span>
+            </div>
+            <div>
               <strong>{detail.issues.errors.length}</strong>
               <span>errors</span>
-            </Card>
-            <Card padding={2}>
+            </div>
+            <div>
               <strong>{detail.locked.length}</strong>
               <span>locked</span>
-            </Card>
+            </div>
           </div>
+
           {map.type === 'graph' ? (
             <>
               <div className="inspector-section">
@@ -150,32 +167,29 @@ export function Inspector({
                   {(['verified', 'declared', 'stale', 'planned'] as const).map((status) => (
                     <div key={status} className="evidence-row">
                       <Badge tone={status === 'verified' ? 'ok' : status === 'stale' ? 'error' : status === 'declared' ? 'warn' : 'info'}>{status}</Badge>
-                      <span>{evidenceCounts[status] ?? 0}</span>
+                      <span className="tabular">{evidenceCounts[status] ?? 0}</span>
                     </div>
                   ))}
                   {detail.error ? <p className="inline-error">{detail.error.message}</p> : null}
                 </Collapsible>
               </div>
+
               {map.walkthrough?.length ? (
                 <div className="inspector-section">
-                  <Button label={`▶ Start walkthrough (${map.walkthrough.length} steps)`} variant="secondary" width="100%" onClick={onStartWalkthrough} />
+                  <Button label={`Start walkthrough (${map.walkthrough.length} steps)`} variant="secondary" width="100%" onClick={onStartWalkthrough} />
                 </div>
               ) : null}
+
               <div className="inspector-section">
                 <Collapsible trigger={<div className="section-title">Nodes</div>} defaultIsOpen>
-                  <div className="node-list" role="list">
+                  <div className="node-list">
                     <List density="compact" hasDividers>
                       {nodes.map((item) => (
-                        <ListItem
-                          key={item.id}
-                          onClick={() => onSelectNode(item.id)}
-                          label={item.label}
-                          endContent={<span className="muted">{kindLabel(item.kind)}</span>}
-                        />
+                        <ListItem key={item.id} onClick={() => onSelectNode(item.id)} label={item.label} endContent={<span className="muted small">{kindLabel(item.kind)}</span>} />
                       ))}
                     </List>
                   </div>
-                  <p className="muted small">This list is the keyboard-accessible alternative to the canvas.</p>
+                  <p className="muted small">Keyboard-accessible alternative to the canvas.</p>
                 </Collapsible>
               </div>
             </>
@@ -185,7 +199,7 @@ export function Inspector({
               {map.participants.map((participant) => (
                 <div key={participant.id} className="conn-row">
                   <strong>{participant.label}</strong>
-                  <span className="muted">{participant.id}</span>
+                  <span className="muted small">{participant.id}</span>
                 </div>
               ))}
             </div>
@@ -195,31 +209,29 @@ export function Inspector({
               {map.entities.map((entity) => (
                 <div key={entity.id} className="conn-row">
                   <strong>{entity.label}</strong>
-                  <span className="muted">{entity.fields.length} fields</span>
+                  <span className="muted small">{entity.fields.length} fields</span>
                 </div>
               ))}
             </div>
           ) : null}
+
           <div className="inspector-section">
             <Collapsible trigger={<div className="section-title">Details</div>} defaultIsOpen>
               <div className="kv">
-                <span>Level</span>
-                <strong>{map.level ?? 'unset'}</strong>
-              </div>
-              <div className="kv">
                 <span>Phase</span>
-                <strong>{map.phase ?? '—'}</strong>
+                <strong>{map.phase ?? 'none'}</strong>
               </div>
               <div className="kv">
                 <span>File</span>
                 <code>{detail.file}</code>
               </div>
               <div className="kv">
-                <span>Rev</span>
+                <span>Revision</span>
                 <code>{detail.rev.slice(0, 10)}</code>
               </div>
             </Collapsible>
           </div>
+
           <div className="inspector-section">
             <Button label="Open related notes" variant="ghost" width="100%" onClick={onOpenNotes} />
           </div>
@@ -262,9 +274,9 @@ export function Inspector({
           .filter(Boolean),
       };
       await onUpdateNode(node.id, next);
-      onToast('Node updated.', 'ok');
-    } catch (err) {
-      onToast((err as Error).message, 'error');
+      onToast('Node saved and locked.', 'ok');
+    } catch (error) {
+      onToast((error as Error).message, 'error');
     } finally {
       setSaving(false);
     }
@@ -275,18 +287,18 @@ export function Inspector({
     try {
       const result = await api.code(ref.path, ref.lines?.[0], ref.lines?.[1]);
       setCode({ path: ref.path, content: result.content });
-    } catch (err) {
-      setCodeError((err as Error).message);
+    } catch (error) {
+      setCodeError((error as Error).message);
     }
   };
 
   const askAgent = async (): Promise<void> => {
     try {
       const { prompt } = await api.explain({ map: detail.id, node: node.id });
-      if (await copyText(prompt)) onToast('Explain prompt copied. Paste it into your agent.', 'ok');
-      else onToast('Could not copy prompt.', 'error');
-    } catch (err) {
-      onToast((err as Error).message, 'error');
+      if (await copyText(prompt)) onToast('Prompt copied. Paste it into your agent.', 'ok');
+      else onToast('Could not copy to clipboard.', 'error');
+    } catch (error) {
+      onToast((error as Error).message, 'error');
     }
   };
 
@@ -295,25 +307,32 @@ export function Inspector({
       <div className="inspector-scroll">
         <div className="inspector-head">
           <div>
-            <span className="eyebrow">
-              {kindLabel(node.kind)} {node.status ? `· ${node.status}` : ''}
-            </span>
             <h2>{node.label}</h2>
+            <div className="inspector-meta">
+              <span>{kindLabel(node.kind)}</span>
+              {node.status ? <span>{node.status}</span> : null}
+              {node.group ? <span>{node.group}</span> : null}
+            </div>
           </div>
-          <div style={{ display: 'flex', gap: '4px' }}>
-            <IconButton label="Clear selection" tooltip="Clear selection" icon={<span aria-hidden="true">×</span>} variant="ghost" size="sm" onClick={() => onSelectNode('')} />
-            {onCollapse && (
-              <IconButton label="Collapse inspector" tooltip="Collapse inspector" icon={<span aria-hidden="true">»</span>} variant="ghost" size="sm" onClick={onCollapse} />
-            )}
+          <div className="inspector-head-actions">
+            <IconButton label="Clear selection" tooltip="Clear selection" icon={<Icon name="close" />} variant="ghost" size="sm" onClick={() => onSelectNode('')} />
+            {onCollapse ? (
+              <IconButton label="Collapse inspector" tooltip="Collapse inspector" icon={<Icon name="panelRightOpen" />} variant="ghost" size="sm" onClick={onCollapse} />
+            ) : null}
           </div>
         </div>
+
         <div className="inspector-badges">
           <Badge tone={evidenceTone}>{evidence?.status ?? 'declared'}</Badge>
-          {isLocked ? <Badge tone="info">🔒 locked</Badge> : null}
-          {node.group ? <Badge tone="neutral">{node.group}</Badge> : null}
+          {isLocked ? (
+            <span className="lock-badge">
+              <Icon name="lock" size={14} />
+              Locked
+            </span>
+          ) : null}
           {node.tags?.map((tag) => (
             <Badge key={tag} tone="neutral">
-              #{tag}
+              {tag}
             </Badge>
           ))}
         </div>
@@ -348,47 +367,64 @@ export function Inspector({
                 </label>
               </div>
               <label className="field">
-                <span>Description (≤ 200 chars)</span>
+                <span>Description</span>
                 <textarea rows={3} maxLength={200} value={String(draft.description ?? '')} onChange={(event) => setDraft({ ...draft, description: event.target.value })} />
               </label>
               <label className="field">
-                <span>Plain-language (beginner mode)</span>
+                <span>Plain-language note</span>
                 <textarea rows={2} value={String(draft.plain ?? '')} onChange={(event) => setDraft({ ...draft, plain: event.target.value })} />
               </label>
               <label className="field">
-                <span>Tags (comma separated)</span>
+                <span>Tags, comma separated</span>
                 <input value={tags} onChange={(event) => setTags(event.target.value)} />
               </label>
             </div>
+
             <div className="inspector-section">
               <div className="section-title">Code refs</div>
               {refs.map((ref, index) => (
                 <div key={index} className="ref-editor">
-                  <input placeholder="src/path.ts" value={ref.path} onChange={(event) => setRefs(refs.map((r, i) => (i === index ? { ...r, path: event.target.value } : r)))} />
-                  <input placeholder="symbol (optional)" value={ref.symbol} onChange={(event) => setRefs(refs.map((r, i) => (i === index ? { ...r, symbol: event.target.value } : r)))} />
-                  <IconButton label="Remove ref" icon={<span aria-hidden="true">×</span>} variant="ghost" size="sm" onClick={() => setRefs(refs.filter((_, i) => i !== index))} />
+                  <input
+                    placeholder="src/path.ts"
+                    aria-label="Reference path"
+                    value={ref.path}
+                    onChange={(event) => setRefs(refs.map((item, itemIndex) => (itemIndex === index ? { ...item, path: event.target.value } : item)))}
+                  />
+                  <input
+                    placeholder="symbol"
+                    aria-label="Reference symbol"
+                    value={ref.symbol}
+                    onChange={(event) => setRefs(refs.map((item, itemIndex) => (itemIndex === index ? { ...item, symbol: event.target.value } : item)))}
+                  />
+                  <IconButton label="Remove reference" icon={<Icon name="close" />} variant="ghost" size="sm" onClick={() => setRefs(refs.filter((_, itemIndex) => itemIndex !== index))} />
                 </div>
               ))}
-              <Button label="+ Add ref" variant="ghost" size="sm" onClick={() => setRefs([...refs, { path: '', symbol: '' }])} />
+              <Button label="Add reference" variant="ghost" size="sm" onClick={() => setRefs([...refs, { path: '', symbol: '' }])} />
             </div>
+
             <div className="inspector-actions">
-              <Button label={saving ? 'Saving…' : 'Save changes'} variant="primary" isDisabled={saving} onClick={() => void save()} />
-              <Button label="Reset" variant="ghost" onClick={() => setDraft({ ...draft, label: node.label, kind: node.kind, description: node.description ?? '', plain: node.plain ?? '', status: node.status ?? 'built' })} />
+              <Button label={saving ? 'Saving' : 'Save changes'} variant="primary" isDisabled={saving} onClick={() => void save()} />
+              <Button
+                label="Reset"
+                variant="ghost"
+                onClick={() => setDraft({ ...draft, label: node.label, kind: node.kind, description: node.description ?? '', plain: node.plain ?? '', status: node.status ?? 'built' })}
+              />
               <Button label="Delete" variant="destructive" onClick={() => void onDeleteNode(node.id)} />
             </div>
-            <p className="muted small">Saving a human edit auto-locks this node so agents cannot overwrite it silently.</p>
+            <p className="muted small">Saving a human edit locks this node so agents cannot overwrite it.</p>
           </>
         ) : (
           <>
-            <p className={classNames('node-description', beginner && node.plain && 'plain')}>{beginner ? node.plain ?? node.description ?? 'No plain-language note yet.' : node.description ?? 'No description yet.'}</p>
+            <p className={classNames('node-description', beginner && node.plain && 'plain')}>
+              {beginner ? node.plain ?? node.description ?? 'No plain-language note yet.' : node.description ?? 'No description yet.'}
+            </p>
             {!beginner && node.plain ? (
-              <Card variant="muted" padding={2}>
-                <div className="plain-note" style={{ border: 'none', background: 'transparent', padding: 0 }}>
-                  <span>Plain language</span>
-                  <p>{node.plain}</p>
-                </div>
-              </Card>
+              <div className="plain-note">
+                <span>Plain language</span>
+                <p>{node.plain}</p>
+              </div>
             ) : null}
+
             <div className="inspector-section">
               <Collapsible trigger={<div className="section-title">Code refs</div>} defaultIsOpen>
                 {(node.refs ?? []).length ? (
@@ -397,26 +433,33 @@ export function Inspector({
                       <button type="button" className="ref-path" onClick={() => void copyText(ref.path)} title="Copy path">
                         <code>{shortPath(ref.path)}</code>
                         {ref.symbol ? <span>#{ref.symbol}</span> : null}
-                        {ref.lines ? <span className="muted">:{ref.lines[0]}–{ref.lines[1]}</span> : null}
+                        {ref.lines ? (
+                          <span className="muted">
+                            :{ref.lines[0]} to {ref.lines[1]}
+                          </span>
+                        ) : null}
                       </button>
                       <Button label="Peek" variant="secondary" size="sm" onClick={() => void previewCode(ref)} />
                     </div>
                   ))
                 ) : (
-                  <p className="muted small">No refs. {node.kind === 'external' || node.kind === 'actor' ? 'Allowed for external systems and people.' : 'Add code refs so this node is verifiable.'}</p>
+                  <p className="muted small">
+                    No refs. {node.kind === 'external' || node.kind === 'actor' ? 'Allowed for external systems and people.' : 'Add code refs so this node is verifiable.'}
+                  </p>
                 )}
                 {codeError ? <p className="inline-error">{codeError}</p> : null}
                 {code ? (
                   <div className="code-peek">
                     <div className="code-peek-head">
                       <code>{code.path}</code>
-                      <IconButton label="Close code preview" icon={<span aria-hidden="true">×</span>} variant="ghost" size="sm" onClick={() => setCode(null)} />
+                      <IconButton label="Close code preview" icon={<Icon name="close" />} variant="ghost" size="sm" onClick={() => setCode(null)} />
                     </div>
                     <pre>{code.content}</pre>
                   </div>
                 ) : null}
               </Collapsible>
             </div>
+
             <div className="inspector-section">
               <Collapsible trigger={<div className="section-title">Connections</div>} defaultIsOpen>
                 {connections.incoming.length + connections.outgoing.length === 0 ? <p className="muted small">No connections yet.</p> : null}
@@ -426,7 +469,11 @@ export function Inspector({
                       <ListItem
                         key={`in-${edge.from}-${edge.to}-${edge.kind}`}
                         onClick={() => other && onSelectNode(other.id)}
-                        startContent={<span className="conn-dir">←</span>}
+                        startContent={
+                          <span className="conn-dir">
+                            <Icon name="arrowLeft" size={14} />
+                          </span>
+                        }
                         label={other?.label ?? edge.from}
                         endContent={<Badge tone="neutral">{edge.kind}</Badge>}
                       />
@@ -435,7 +482,11 @@ export function Inspector({
                       <ListItem
                         key={`out-${edge.from}-${edge.to}-${edge.kind}`}
                         onClick={() => other && onSelectNode(other.id)}
-                        startContent={<span className="conn-dir">→</span>}
+                        startContent={
+                          <span className="conn-dir">
+                            <Icon name="arrowRight" size={14} />
+                          </span>
+                        }
                         label={other?.label ?? edge.to}
                         endContent={<Badge tone="neutral">{edge.kind}</Badge>}
                       />
@@ -444,6 +495,7 @@ export function Inspector({
                 ) : null}
               </Collapsible>
             </div>
+
             <div className="inspector-section">
               <Collapsible trigger={<div className="section-title">History</div>} defaultIsOpen>
                 {nodeChanges.length ? (
@@ -458,14 +510,16 @@ export function Inspector({
                 )}
               </Collapsible>
             </div>
+
             {node.drill ? (
               <div className="inspector-section">
                 <div className="section-title">Drill down</div>
-                <code>{node.drill}</code>
+                <code className="small">{node.drill}</code>
               </div>
             ) : null}
+
             <div className="inspector-actions">
-              <Button label="Ask agent about this" variant="primary" onClick={() => void askAgent()} />
+              <Button label="Ask your agent to explain" variant="primary" onClick={() => void askAgent()} />
               <Button label={isLocked ? 'Unlock node' : 'Lock node'} variant="secondary" onClick={() => void onLock(node.id, !isLocked)} />
             </div>
           </>

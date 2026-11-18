@@ -31,7 +31,8 @@ import { Inspector } from './components/Inspector';
 import { ActivityPanel, ChangesPanel, CoveragePanel, NotesPanel, PhasesPanel, ProblemsPanel, TimelinePanel } from './components/Panels';
 import { AddNodeModal, EdgeModal, NewMapModal, PromptModal, SearchModal, SettingsModal, ShortcutsModal, StickyModal, TourModal } from './components/Modals';
 import { EmptyState, Spinner, Toast } from './components/ui';
-import { classNames, copyText, mapIdFromIssueFile, promptForFile } from './util';
+import { Icon, VisuCodeMark } from './components/icons';
+import { classNames, copyText, mapIdFromIssueFile } from './util';
 
 type ModalState =
   | { kind: 'new-map' }
@@ -80,7 +81,7 @@ function downloadBlob(blob: Blob, filename: string): void {
   URL.revokeObjectURL(url);
 }
 
-const PLAN_PROMPT = `Plan this project visually in VibeMap before writing code.
+const PLAN_PROMPT = `Plan this project visually in VisuCode before writing code.
 
 1. Read .vibemap/AGENT_GUIDE.md.
 2. Create a 00-overview map (level overview) with the main pieces, groups and the people/systems outside the app. Keep it ≤ 15 nodes; planned nodes need no refs.
@@ -99,6 +100,9 @@ export function App({
 } = {}): React.ReactElement {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [inspectorCollapsed, setInspectorCollapsed] = useState(false);
+  const [navOpen, setNavOpen] = useState(false);
+  const [inspectorOpen, setInspectorOpen] = useState(false);
+  const [resetConfirm, setResetConfirm] = useState(false);
   const [project, setProject] = useState<ProjectInfo | null>(null);
   const [maps, setMaps] = useState<MapSummary[]>([]);
   const [check, setCheck] = useState<CheckReport | null>(null);
@@ -176,7 +180,7 @@ export function App({
   }, [beginner]);
 
   useEffect(() => {
-    document.title = `${project?.name ?? 'VibeMap'} — VibeMap`;
+    document.title = `${project?.name ?? 'VisuCode'} · VisuCode`;
   }, [project?.name]);
 
   const applyDetail = useCallback((next: MapDetail) => {
@@ -198,7 +202,7 @@ export function App({
         setSelectedMapId(response.maps[0].id);
       }
     } catch (error) {
-      if ((error as { status?: number }).status === 401) setFatal('The VibeMap token is invalid. Restart `vibemap view` and reopen the URL from the terminal.');
+      if ((error as { status?: number }).status === 401) setFatal('The VisuCode token is invalid. Restart `vibemap view` and reopen the URL from the terminal.');
     }
   }, []);
 
@@ -579,9 +583,14 @@ export function App({
   );
 
   const resetLayout = useCallback(() => {
+    if (!sidecarRef.current) return;
+    setResetConfirm(true);
+  }, []);
+
+  const confirmResetLayout = useCallback(() => {
     const current = sidecarRef.current;
+    setResetConfirm(false);
     if (!current) return;
-    if (!window.confirm('Reset all pinned positions? Annotations are kept. Agents never write layouts; this only affects your view.')) return;
     const next = { ...current, nodes: {} };
     persistLayout(next, true);
     setFitNonce((value) => value + 1);
@@ -616,6 +625,11 @@ export function App({
   );
 
   const [deleteConfirmNodeId, setDeleteConfirmNodeId] = useState<string | null>(null);
+
+  const closeInspector = useCallback(() => {
+    setInspectorCollapsed(true);
+    setInspectorOpen(false);
+  }, []);
 
   const updateNode = useCallback(
     async (id: string, set: Partial<VibeNode>) => {
@@ -847,6 +861,7 @@ export function App({
       setSelectedMapId(id);
       setTab('maps');
       setModal(null);
+      setNavOpen(false);
       try {
         const url = new URL(window.location.href);
         url.searchParams.set('map', id);
@@ -907,10 +922,10 @@ export function App({
   );
 
   const bootstrap = useCallback(async () => {
-    toast('Generating a bootstrap prompt from the scanner…', 'info');
+    toast('Generating an agent prompt from the scanner.', 'info');
     try {
       const result = await api.bootstrap();
-      setModal({ kind: 'prompt', title: 'Bootstrap prompt', prompt: result.prompt });
+      setModal({ kind: 'prompt', title: 'Agent prompt', prompt: result.prompt });
     } catch (error) {
       toast((error as Error).message, 'error');
     }
@@ -973,6 +988,14 @@ export function App({
         }
       }
       if (event.key === 'Escape') {
+        if (navOpen) {
+          setNavOpen(false);
+          return;
+        }
+        if (inspectorOpen) {
+          setInspectorOpen(false);
+          return;
+        }
         if (connectMode) {
           setConnectMode(false);
           setConnectFrom(null);
@@ -1021,7 +1044,7 @@ export function App({
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [connectMode, diffData, modal, selectedNodeId, viewDetail?.map, walkthrough.active]);
+  }, [connectMode, diffData, modal, navOpen, inspectorOpen, selectedNodeId, viewDetail?.map, walkthrough.active]);
 
   // First-run tour.
   useEffect(() => {
@@ -1032,9 +1055,9 @@ export function App({
     return (
       <div className="setup-screen">
         <div className="setup-card">
-          <div className="logo large">VM</div>
-          <h1>VibeMap needs the local server</h1>
-          <p>Open the URL printed by <code>vibemap view</code>. The viewer uses a per-session token and must be served by the local VibeMap server.</p>
+          <VisuCodeMark height={28} />
+          <h1>VisuCode needs the local server</h1>
+          <p>Open the URL printed by <code>vibemap view</code>. The viewer uses a per-session token and must be served by the local VisuCode server.</p>
           <form
             onSubmit={(event) => {
               event.preventDefault();
@@ -1049,9 +1072,7 @@ export function App({
               <span>Server token (from .vibemap/.cache/server.json)</span>
               <input name="token" placeholder="Paste token" />
             </label>
-            <button type="submit" className="btn primary">
-              Connect
-            </button>
+            <Button label="Connect" type="submit" variant="primary" />
           </form>
           <p className="muted">Or run <code>vibemap view</code> in your project and use that URL.</p>
         </div>
@@ -1062,8 +1083,8 @@ export function App({
   if (loading) {
     return (
       <div className="loading-screen">
-        <div className="logo large">VM</div>
-        <Spinner label="Opening your project…" />
+        <VisuCodeMark height={28} />
+        <Spinner label="Opening your project" />
       </div>
     );
   }
@@ -1072,13 +1093,11 @@ export function App({
     return (
       <div className="setup-screen">
         <div className="setup-card">
-          <div className="logo large">VM</div>
+          <VisuCodeMark height={28} />
           <h1>Could not open the project</h1>
           <p className="inline-error">{fatal}</p>
           <p>Restart <code>vibemap view</code> in your project, then reload the URL it prints.</p>
-          <button type="button" className="btn primary" onClick={() => window.location.reload()}>
-            Retry
-          </button>
+          <Button label="Retry" variant="primary" onClick={() => window.location.reload()} />
         </div>
       </div>
     );
@@ -1086,7 +1105,6 @@ export function App({
 
   const summary = maps.find((map) => map.id === selectedMapId);
   const noMaps = maps.length === 0;
-  const mapTheme = project?.theme;
   const canEdit = tab === 'maps' && !!viewDetail && !historical && mode === 'edit' && viewDetail.map.type === 'graph';
   const currentWalkthrough = viewDetail?.map.type === 'graph' ? viewDetail.map.walkthrough?.[walkthrough.index] : undefined;
 
@@ -1118,16 +1136,15 @@ export function App({
         onHelp={() => setModal({ kind: 'shortcuts' })}
         onExport={(format) => void exportMap(format)}
         onRefresh={() => void refreshAll()}
-        sidebarCollapsed={sidebarCollapsed}
-        onToggleSidebar={() => setSidebarCollapsed((v) => !v)}
-        inspectorCollapsed={inspectorCollapsed}
-        onToggleInspector={() => setInspectorCollapsed((v) => !v)}
+        onMenu={() => setNavOpen(true)}
       />
       <div
         className={classNames(
           'app-body',
           (tab !== 'maps' || inspectorCollapsed || !viewDetail) && 'no-inspector',
           sidebarCollapsed && 'sidebar-collapsed',
+          navOpen && 'nav-open',
+          inspectorOpen && 'inspector-open',
         )}
       >
         <Sidebar
@@ -1142,46 +1159,49 @@ export function App({
           version={project?.versions.vibemap}
           onCollapse={() => setSidebarCollapsed(true)}
         />
+        <button
+          type="button"
+          className="drawer-scrim"
+          aria-label="Close panel"
+          onClick={() => {
+            setNavOpen(false);
+            setInspectorOpen(false);
+          }}
+        />
         <main className="workspace">
           {sidebarCollapsed && (
-            <button
-              type="button"
-              className="floating-panel-toggle floating-left"
-              onClick={() => setSidebarCollapsed(false)}
-              title="Expand sidebar"
-            >
-              <span aria-hidden="true">»</span>
+            <button type="button" className="floating-panel-toggle floating-left only-desktop" onClick={() => setSidebarCollapsed(false)} title="Expand map list">
+              <Icon name="panelLeftClose" size={14} />
               <span>Maps</span>
             </button>
           )}
           {tab === 'maps' && viewDetail && inspectorCollapsed && (
-            <button
-              type="button"
-              className="floating-panel-toggle floating-right"
-              onClick={() => setInspectorCollapsed(false)}
-              title="Expand inspector"
-            >
-              <span>Inspector</span>
-              <span aria-hidden="true">«</span>
+            <button type="button" className="floating-panel-toggle floating-right only-desktop" onClick={() => setInspectorCollapsed(false)} title="Expand inspector">
+              <span>Details</span>
+              <Icon name="panelRightOpen" size={14} />
+            </button>
+          )}
+          {tab === 'maps' && viewDetail && !inspectorOpen && (
+            <button type="button" className="floating-panel-toggle floating-right only-mobile" onClick={() => setInspectorOpen(true)} title="Open details">
+              <span>Details</span>
+              <Icon name="panelRightOpen" size={14} />
             </button>
           )}
           {noMaps ? (
             <div className="empty-workspace">
               <EmptyState
-                icon="◎"
-                title="Turn this project into a map"
+                icon="circleDot"
+                title="Start your first map"
                 actions={
                   <>
-                    <Button label="Copy bootstrap prompt" variant="primary" onClick={() => void bootstrap()} />
-                    <Button label="Plan-first prompt" variant="secondary" onClick={() => setModal({ kind: 'prompt', title: 'Plan-first prompt', prompt: PLAN_PROMPT })} />
+                    <Button label="Copy agent prompt" variant="primary" onClick={() => void bootstrap()} />
+                    <Button label="Copy planning prompt" variant="secondary" onClick={() => setModal({ kind: 'prompt', title: 'Planning prompt', prompt: PLAN_PROMPT })} />
                     <Button label="Draw by hand" variant="ghost" onClick={() => setModal({ kind: 'new-map' })} />
                   </>
                 }
               >
-                <p>VibeMap keeps diagrams and plain-language notes next to your code. The agent describes what exists; the tool draws it and checks every claim against real files.</p>
-                <p className="muted">
-                  Start with <code>vibemap bootstrap</code>, paste the prompt into Claude Code, Cursor, Codex or any agent, then watch maps appear here live.
-                </p>
+                <p>VisuCode keeps diagrams and plain-language notes next to your code. The agent describes what exists, the tool draws it and checks every claim against real files.</p>
+                <p>Start with <code>vibemap bootstrap</code>, paste the prompt into your agent, then watch maps appear here.</p>
               </EmptyState>
             </div>
           ) : tab === 'maps' ? (
@@ -1190,7 +1210,7 @@ export function App({
                 <div className="banner banner-warn">
                   <span>{pendingDetail.message}</span>
                   <Button label="Apply update" variant="secondary" size="sm" onClick={applyPendingDetail} />
-                  <IconButton label="Dismiss" icon={<span aria-hidden="true">×</span>} variant="ghost" size="sm" onClick={() => setPendingDetail(null)} />
+                  <IconButton label="Dismiss" icon={<Icon name="close" />} variant="ghost" size="sm" onClick={() => setPendingDetail(null)} />
                 </div>
               ) : null}
               {detail?.error ? (
@@ -1212,9 +1232,9 @@ export function App({
               {diffData ? (
                 <div className="banner banner-diff">
                   <span>
-                    Comparing <strong>{diffData.baseLabel}</strong> → now. <span className="muted">[ / ] steps through changed nodes.</span>
+                    Comparing <strong>{diffData.baseLabel}</strong> with the current version. <span className="muted">Brackets step through changed nodes.</span>
                   </span>
-                  <Button label="Exit diff" variant="ghost" size="sm" onClick={() => setDiffData(null)} />
+                  <Button label="Close comparison" variant="ghost" size="sm" onClick={() => setDiffData(null)} />
                 </div>
               ) : null}
               {phaseFilter ? (
@@ -1242,7 +1262,6 @@ export function App({
                     fitNonce={fitNonce}
                     diff={diffCanvas}
                     readOnly={!!historical}
-                    onZoom={() => undefined}
                   />
                 ) : (
                   <div className="canvas-loading">
@@ -1251,7 +1270,7 @@ export function App({
                 )}
                 {canEdit ? (
                   <div className="edit-toolbar" role="toolbar" aria-label="Edit tools">
-                    <Button label="+ Node" variant="secondary" size="sm" onClick={() => setModal({ kind: 'add-node' })} />
+                    <Button label="Add node" variant="secondary" size="sm" onClick={() => setModal({ kind: 'add-node' })} />
                     <Button
                       label="Connect"
                       variant={connectMode ? 'primary' : 'secondary'}
@@ -1261,7 +1280,7 @@ export function App({
                         setConnectFrom(null);
                       }}
                     />
-                    <Button label="Sticky" variant="secondary" size="sm" onClick={() => setModal({ kind: 'sticky' })} />
+                    <Button label="Add note" variant="secondary" size="sm" onClick={() => setModal({ kind: 'sticky' })} />
                     <Button label="Reset layout" variant="ghost" size="sm" onClick={resetLayout} />
                     <Button label="Done" variant="ghost" size="sm" onClick={() => setMode('view')} />
                   </div>
@@ -1273,9 +1292,9 @@ export function App({
                     </div>
                     <p>{currentWalkthrough.text}</p>
                     <div className="walkthrough-actions">
-                      <IconButton label="Previous step" icon={<span aria-hidden="true">‹</span>} variant="ghost" size="sm" onClick={() => setWalkthrough((current) => ({ ...current, playing: false, index: Math.max(0, current.index - 1) }))} />
+                      <IconButton label="Previous step" icon={<Icon name="chevronLeft" />} variant="ghost" size="sm" onClick={() => setWalkthrough((current) => ({ ...current, playing: false, index: Math.max(0, current.index - 1) }))} />
                       <Button label={walkthrough.playing ? 'Pause' : 'Play'} variant="secondary" size="sm" onClick={() => setWalkthrough((current) => ({ ...current, playing: !current.playing }))} />
-                      <IconButton label="Next step" icon={<span aria-hidden="true">›</span>} variant="ghost" size="sm" onClick={() => setWalkthrough((current) => ({ ...current, playing: false, index: Math.min((viewDetail?.map.type === 'graph' ? viewDetail.map.walkthrough?.length ?? 1 : 1) - 1, current.index + 1) }))} />
+                      <IconButton label="Next step" icon={<Icon name="chevronRight" />} variant="ghost" size="sm" onClick={() => setWalkthrough((current) => ({ ...current, playing: false, index: Math.min((viewDetail?.map.type === 'graph' ? viewDetail.map.walkthrough?.length ?? 1 : 1) - 1, current.index + 1) }))} />
                       <Button label="Close" variant="ghost" size="sm" onClick={() => setWalkthrough({ active: false, index: 0, playing: false })} />
                     </div>
                   </div>
@@ -1288,7 +1307,7 @@ export function App({
                       <Tab value="problems" label={`Problems ${check ? `(${check.errors.length + check.warnings.length})` : ''}`} />
                       <Tab value="activity" label="Activity" />
                     </TabList>
-                    <IconButton label="Close panel" icon={<span aria-hidden="true">×</span>} variant="ghost" size="sm" onClick={() => setBottom(null)} />
+                    <IconButton label="Close panel" icon={<Icon name="close" />} variant="ghost" size="sm" onClick={() => setBottom(null)} />
                   </div>
                   <div className="bottom-body">
                     {bottom === 'problems' ? (
@@ -1372,7 +1391,7 @@ export function App({
             onStartWalkthrough={startWalkthrough}
             onOpenNotes={() => setTab('notes')}
             onToast={toast}
-            onCollapse={() => setInspectorCollapsed(true)}
+            onCollapse={closeInspector}
           />
         ) : null}
       </div>
@@ -1383,10 +1402,21 @@ export function App({
           if (!open) setDeleteConfirmNodeId(null);
         }}
         title="Delete node?"
-        description="Delete this node and all of its edges? This is recorded in the change journal."
+        description="Delete this node and all of its edges? The change is recorded in the journal."
         actionLabel="Delete"
         actionVariant="destructive"
         onAction={confirmDeleteNode}
+      />
+      <AlertDialog
+        isOpen={resetConfirm}
+        onOpenChange={(open) => {
+          if (!open) setResetConfirm(false);
+        }}
+        title="Reset layout?"
+        description="Pinned positions return to the automatic layout. Sticky notes are kept. This only affects your view."
+        actionLabel="Reset layout"
+        actionVariant="destructive"
+        onAction={confirmResetLayout}
       />
       {modal?.kind === 'new-map' ? <NewMapModal onClose={() => setModal(null)} onCreate={createNewMap} /> : null}
       {modal?.kind === 'add-node' ? <AddNodeModal onClose={() => setModal(null)} onCreate={createNode} startConnect={connectFrom} /> : null}

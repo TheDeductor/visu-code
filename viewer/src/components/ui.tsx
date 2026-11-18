@@ -1,10 +1,7 @@
 import React from 'react';
 import { Dialog, DialogHeader } from '@astryxdesign/core/Dialog';
-import { Badge as AstryxBadge } from '@astryxdesign/core/Badge';
-import { IconButton } from '@astryxdesign/core/IconButton';
-import { Toast as AstryxToast } from '@astryxdesign/core/Toast';
 import { ProgressBar as AstryxProgressBar } from '@astryxdesign/core/ProgressBar';
-import { classNames } from '../util';
+import { Icon, type IconName } from './icons';
 
 export function Modal({
   title,
@@ -27,7 +24,7 @@ export function Modal({
       onOpenChange={(open) => {
         if (!open) onClose();
       }}
-      width={wide ? 720 : 480}
+      width={wide ? 'min(720px, calc(100vw - 32px))' : 'min(480px, calc(100vw - 32px))'}
     >
       <DialogHeader
         title={title}
@@ -52,22 +49,14 @@ export function Badge({
   tone?: 'neutral' | 'ok' | 'warn' | 'error' | 'info' | 'planned';
   title?: string;
 }): React.ReactElement {
-  const variantMap: Record<string, 'neutral' | 'info' | 'success' | 'warning' | 'error' | 'purple'> = {
-    neutral: 'neutral',
-    ok: 'success',
-    warn: 'warning',
-    error: 'error',
-    info: 'info',
-    planned: 'purple',
-  };
   return (
-    <span title={title} className="badge-wrap">
-      <AstryxBadge label={children} variant={variantMap[tone] ?? 'neutral'} />
+    <span title={title} className={`badge badge-${tone}`}>
+      {children}
     </span>
   );
 }
 
-export function Spinner({ label = 'Loading…' }: { label?: string }): React.ReactElement {
+export function Spinner({ label = 'Loading' }: { label?: string }): React.ReactElement {
   return (
     <div className="spinner" role="status">
       <span />
@@ -77,12 +66,12 @@ export function Spinner({ label = 'Loading…' }: { label?: string }): React.Rea
 }
 
 export function EmptyState({
-  icon = '◇',
+  icon = 'inbox',
   title,
   children,
   actions,
 }: {
-  icon?: string;
+  icon?: IconName;
   title: string;
   children?: React.ReactNode;
   actions?: React.ReactNode;
@@ -90,7 +79,7 @@ export function EmptyState({
   return (
     <div className="empty-state">
       <div className="empty-icon" aria-hidden="true">
-        {icon}
+        <Icon name={icon} size={20} />
       </div>
       <h2>{title}</h2>
       {children ? <div className="empty-body">{children}</div> : null}
@@ -99,17 +88,25 @@ export function EmptyState({
   );
 }
 
-export function Toast({ message, tone = 'info', onClose }: { message: string; tone?: 'info' | 'ok' | 'error' | 'warn'; onClose: () => void }): React.ReactElement {
-  const type = tone === 'error' ? 'error' : 'info';
+export function Toast({
+  message,
+  tone = 'info',
+  onClose,
+}: {
+  message: string;
+  tone?: 'info' | 'ok' | 'error' | 'warn';
+  onClose: () => void;
+}): React.ReactElement {
+  const icon: IconName = tone === 'ok' ? 'check' : tone === 'error' || tone === 'warn' ? 'alert' : 'info';
   return (
-    <div style={{ position: 'fixed', right: '18px', bottom: '18px', zIndex: 200 }}>
-      <AstryxToast
-        type={type}
-        body={message}
-        isAutoHide={true}
-        autoHideDuration={4500}
-        onDismiss={() => onClose()}
-      />
+    <div className={`toast toast-${tone}`} role="status">
+      <span className="toast-icon" aria-hidden="true">
+        <Icon name={icon} size={16} />
+      </span>
+      <span className="toast-body">{message}</span>
+      <button type="button" className="toast-close" aria-label="Dismiss" onClick={onClose}>
+        <Icon name="close" size={14} />
+      </button>
     </div>
   );
 }
@@ -117,14 +114,8 @@ export function Toast({ message, tone = 'info', onClose }: { message: string; to
 export function ProgressBar({ percent, tone = 'info' }: { percent: number; tone?: 'info' | 'warn' | 'error' | 'ok' }): React.ReactElement {
   const variant = tone === 'ok' ? 'success' : tone === 'warn' ? 'warning' : tone === 'error' ? 'error' : 'accent';
   return (
-    <div className="progress-wrap" style={{ width: '100%' }}>
-      <AstryxProgressBar
-        value={Math.min(100, Math.max(0, percent))}
-        max={100}
-        label="Progress"
-        isLabelHidden
-        variant={variant}
-      />
+    <div className="progress-wrap">
+      <AstryxProgressBar value={Math.min(100, Math.max(0, percent))} max={100} label="Progress" isLabelHidden variant={variant} />
     </div>
   );
 }

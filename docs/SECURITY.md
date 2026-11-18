@@ -1,6 +1,6 @@
 # Security model
 
-VibeMap is a local developer tool. It assumes one trusted user on one machine.
+VisuCode is a local developer tool. It assumes one trusted user on one machine.
 
 ## Server
 

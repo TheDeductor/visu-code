@@ -681,7 +681,7 @@ class VibeMapServer {
     const url = new URL(req.url ?? '/', `http://${req.headers.host ?? 'localhost'}`);
     if (url.pathname.startsWith(API_PREFIX) || url.pathname === SOCKET_PATH) {
       if (!this.authorized(req, url)) {
-        json(res, 401, { error: { code: 'UNAUTHORIZED', message: 'Missing or invalid VibeMap token.' } });
+        json(res, 401, { error: { code: 'UNAUTHORIZED', message: 'Missing or invalid VisuCode token.' } });
         return;
       }
       if (!this.originAllowed(req)) {
@@ -1060,7 +1060,7 @@ class VibeMapServer {
   private handleCode(res: ServerResponse, url: URL): void {
     const rel = normalizeRelPath(url.searchParams.get('path') ?? '');
     if (!rel) throw new HttpError(400, 'BAD_REQUEST', 'path is required.');
-    if (isSecretFile(rel)) throw new HttpError(403, 'SECRET_FILE', 'Secret-like files are never read by VibeMap.');
+    if (isSecretFile(rel)) throw new HttpError(403, 'SECRET_FILE', 'Secret-like files are never read by VisuCode.');
     let abs: string;
     try {
       abs = resolveInsideReal(this.root, rel);
@@ -1117,7 +1117,7 @@ class VibeMapServer {
     if (body.change) {
       const change = listChanges(this.project).find((c) => c.id === body.change);
       if (!change) throw new HttpError(404, 'CHANGE_NOT_FOUND', 'Change not found.');
-      return `Explain the VibeMap change "${change.title}" (${change.id}) to a beginner. Here is the change entry:\n\n${change.body}\n\nUse plain language, then describe what data moved where and why it matters. Do not invent code that is not in the project.`;
+      return `Explain the VisuCode change "${change.title}" (${change.id}) to a beginner. Here is the change entry:\n\n${change.body}\n\nUse plain language, then describe what data moved where and why it matters. Do not invent code that is not in the project.`;
     }
     if (!body.map || !body.node) throw new HttpError(400, 'BAD_REQUEST', 'map and node (or change) are required.');
     const runtime = this.maps.get(body.map);
@@ -1126,7 +1126,7 @@ class VibeMapServer {
     const node = runtime.map.nodes.find((n) => n.id === body.node);
     if (!node) throw new HttpError(404, 'NODE_NOT_FOUND', 'Node not found.');
     const refs = (node.refs ?? []).map((r) => `${r.path}${r.symbol ? `#${r.symbol}` : ''}${r.lines ? `:${r.lines[0]}-${r.lines[1]}` : ''}`);
-    return `Explain \`${node.label}\` (${body.map}#${node.id}) to a beginner who is vibe-coding this project.\n\nNode kind: ${node.kind}\nStatus: ${node.status ?? 'unspecified'}\nDescription: ${node.description ?? node.label}\n${node.plain ? `Plain-language note: ${node.plain}\n` : ''}Code refs: ${refs.length ? refs.join(', ') : '(none declared)'}\nMap: ${body.map} — ${runtime.map.title}\n\nShow the data flow with one concrete example request/response, then list the two most likely places a change here could break something. Be concrete; do not invent components.`;
+    return `Explain \`${node.label}\` (${body.map}#${node.id}) to a beginner who is vibe-coding this project.\n\nNode kind: ${node.kind}\nStatus: ${node.status ?? 'unspecified'}\nDescription: ${node.description ?? node.label}\n${node.plain ? `Plain-language note: ${node.plain}\n` : ''}Code refs: ${refs.length ? refs.join(', ') : '(none declared)'}\nMap: ${body.map} (${runtime.map.title})\n\nShow the data flow with one concrete example request/response, then list the two most likely places a change here could break something. Be concrete; do not invent components.`;
   }
 
   private handleExport(res: ServerResponse, url: URL, id: string): void {
@@ -1177,7 +1177,7 @@ class VibeMapServer {
       text(
         res,
         200,
-        `<!doctype html><html><head><meta charset="utf-8"><title>VibeMap server</title><style>body{font-family:system-ui;background:#f8f9fa;color:#212529;max-width:720px;margin:10vh auto;padding:0 24px}code{background:#e9ecef;padding:2px 5px;border-radius:4px}</style></head><body><h1>VibeMap server is running</h1><p>The API is live at <code>/api/project</code>, but the viewer has not been built.</p><p>Run <code>npm run build</code> in the VibeMap checkout, then restart <code>vibemap view</code>.</p></body></html>`,
+        `<!doctype html><html><head><meta charset="utf-8"><title>VisuCode server</title><style>body{font-family:system-ui;background:#f8f9fa;color:#212529;max-width:720px;margin:10vh auto;padding:0 24px}code{background:#e9ecef;padding:2px 5px;border-radius:4px}</style></head><body><h1>VisuCode server is running</h1><p>The API is live at <code>/api/project</code>, but the viewer has not been built.</p><p>Run <code>npm run build</code> in the VisuCode checkout, then restart <code>vibemap view</code>.</p></body></html>`,
         'text/html; charset=utf-8',
       );
       return;

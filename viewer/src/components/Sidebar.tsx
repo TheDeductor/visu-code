@@ -2,8 +2,9 @@ import React, { useMemo } from 'react';
 import { IconButton } from '@astryxdesign/core/IconButton';
 import { TextInput } from '@astryxdesign/core/TextInput';
 import type { MapSummary } from '@core/types';
-import { Badge, ProgressBar } from './ui';
-import { classNames, mapFolder, mapIcon, mapLeaf } from '../util';
+import { ProgressBar } from './ui';
+import { classNames, mapFolder, mapLeaf } from '../util';
+import { Icon, mapTypeIcon } from './icons';
 
 export function Sidebar({
   maps,
@@ -33,6 +34,7 @@ export function Sidebar({
     if (!needle) return maps;
     return maps.filter((map) => `${map.id} ${map.title} ${map.summary ?? ''}`.toLowerCase().includes(needle));
   }, [maps, filter]);
+
   const groups = useMemo(() => {
     const map = new Map<string, MapSummary[]>();
     for (const item of filtered) {
@@ -47,15 +49,16 @@ export function Sidebar({
   return (
     <aside className="sidebar" aria-label="Map navigator">
       <div className="sidebar-head">
-        <TextInput label="Filter maps" isLabelHidden value={filter} onChange={(val) => onFilter(val)} placeholder="Filter maps…" hasClear size="sm" />
-        <IconButton label="New map" tooltip="New map" icon={<span aria-hidden="true">+</span>} variant="ghost" size="sm" onClick={onNewMap} />
-        {onCollapse && (
-          <IconButton label="Collapse sidebar" tooltip="Collapse sidebar" icon={<span aria-hidden="true">«</span>} variant="ghost" size="sm" onClick={onCollapse} />
-        )}
+        <TextInput label="Filter maps" isLabelHidden value={filter} onChange={(val) => onFilter(val)} placeholder="Filter maps" hasClear size="sm" />
+        <IconButton label="New map" tooltip="New map" icon={<Icon name="plus" />} variant="ghost" size="sm" onClick={onNewMap} />
+        {onCollapse ? (
+          <IconButton label="Collapse map list" tooltip="Collapse map list" icon={<Icon name="panelLeftClose" />} variant="ghost" size="sm" onClick={onCollapse} />
+        ) : null}
       </div>
-      <div className="map-tree" role="tree">
+
+      <div className="map-tree" role="tree" aria-label="Maps">
         {groups.map(([folder, items]) => (
-          <div key={folder || '(root)'} className="map-group">
+          <div key={folder || '(root)'} className="map-group" role="group" aria-label={folder || 'Maps'}>
             <div className="group-label">{folder || 'maps'}</div>
             {items.map((map) => {
               const active = selectedId === map.id;
@@ -64,28 +67,29 @@ export function Sidebar({
                   key={map.id}
                   type="button"
                   role="treeitem"
+                  aria-level={1}
                   aria-selected={active}
                   className={classNames('map-row', active && 'active')}
                   onClick={() => onSelect(map.id)}
                   title={map.summary ?? map.title}
                 >
                   <span className="map-icon" aria-hidden="true">
-                    {mapIcon(map)}
+                    <Icon name={mapTypeIcon(map.type, map.level)} size={16} />
                   </span>
                   <span className="map-copy">
                     <span className="map-title">
                       {mapLeaf(map.id)}
-                      {map.stale ? <span className="stale-dot" title="Invalid file; showing last good version" /> : null}
+                      {map.stale ? <span className="stale-dot" title="Invalid file, showing the last good version" /> : null}
                     </span>
                     <span className="map-meta">
                       {map.type !== 'graph' ? `${map.type} · ` : ''}
                       {map.nodeCount} nodes
-                      {map.drift ? <span className="drift-dot" title="Drift pending" /> : null}
+                      {map.drift ? <span className="drift-dot" title="Code changed since this map was updated" /> : null}
                     </span>
                   </span>
                   <span className="map-badges">
-                    {map.errors ? <Badge tone="error">{map.errors}</Badge> : null}
-                    {!map.errors && map.warnings ? <Badge tone="warn">{map.warnings}</Badge> : null}
+                    {map.errors ? <span className="count-badge is-error" title={`${map.errors} validation errors`}>{map.errors}</span> : null}
+                    {!map.errors && map.warnings ? <span className="count-badge" title={`${map.warnings} warnings`}>{map.warnings}</span> : null}
                   </span>
                 </button>
               );
@@ -96,25 +100,26 @@ export function Sidebar({
           <div className="sidebar-empty">
             <p>{maps.length ? 'No maps match this filter.' : 'No maps yet.'}</p>
             {!maps.length ? (
-              <button type="button" className="btn small" onClick={onBootstrap}>
-                Bootstrap prompt
+              <button type="button" className="ghost-link" onClick={onBootstrap}>
+                Copy agent prompt
               </button>
             ) : null}
           </div>
         ) : null}
       </div>
+
       <div className="sidebar-foot">
         <div className="coverage-mini">
           <div className="coverage-mini-head">
             <span>Coverage</span>
-            <strong>{coverage === undefined ? '—' : `${coverage}%`}</strong>
+            <strong>{coverage === undefined ? 'n/a' : `${coverage}%`}</strong>
           </div>
           <ProgressBar percent={coverage ?? 0} tone="info" />
         </div>
         <button type="button" className="ghost-link" onClick={onBootstrap}>
-          Paste bootstrap prompt into an agent
+          Copy agent prompt
         </button>
-        <span className="version">VibeMap {version ?? ''}</span>
+        <span className="version">VisuCode {version ?? ''}</span>
       </div>
     </aside>
   );

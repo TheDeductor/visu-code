@@ -1,6 +1,5 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 import { Button } from '@astryxdesign/core/Button';
-import { IconButton } from '@astryxdesign/core/IconButton';
 import { Selector } from '@astryxdesign/core/Selector';
 import { CommandPalette } from '@astryxdesign/core/CommandPalette';
 import { Table, TableBody, TableRow, TableCell } from '@astryxdesign/core/Table';
@@ -8,8 +7,8 @@ import type { SearchSource, SearchableItem } from '@astryxdesign/core/Typeahead'
 import type { NodeKind, NodeStatus, ProjectConfig } from '@core/types';
 import { EDGE_KINDS, NODE_KINDS, NODE_STATUSES } from '@core/types';
 import { api, type ProjectInfo, type SearchResult } from '../api';
-import { Modal, Badge, Spinner } from './ui';
-import { classNames, copyText } from '../util';
+import { Modal, Badge } from './ui';
+import { copyText } from '../util';
 
 export function NewMapModal({
   onClose,
@@ -34,7 +33,7 @@ export function NewMapModal({
         <>
           <Button label="Cancel" variant="ghost" onClick={onClose} />
           <Button
-            label={busy ? 'Creating…' : 'Create map'}
+            label={busy ? 'Creating' : 'Create map'}
             variant="primary"
             isDisabled={!valid || busy}
             onClick={() => {
@@ -100,13 +99,13 @@ export function AddNodeModal({
   return (
     <Modal
       title={startConnect ? `Connect from ${startConnect}` : 'Add a node'}
-      subtitle="Human-added nodes start planned and have no refs until you or an agent verify them."
+      subtitle="Human-added nodes start as planned and have no refs until you or an agent verify them."
       onClose={onClose}
       footer={
         <>
           <Button label="Cancel" variant="ghost" onClick={onClose} />
           <Button
-            label={busy ? 'Adding…' : 'Add node'}
+            label={busy ? 'Adding' : 'Add node'}
             variant="primary"
             isDisabled={!label.trim() || busy}
             onClick={() => {
@@ -148,7 +147,7 @@ export function AddNodeModal({
         </label>
       </div>
       <label className="field">
-        <span>Description (optional)</span>
+        <span>Description</span>
         <textarea rows={2} value={description} onChange={(event) => setDescription(event.target.value)} />
       </label>
       {error ? <p className="inline-error">{error}</p> : null}
@@ -174,13 +173,13 @@ export function EdgeModal({
   return (
     <Modal
       title="Connect nodes"
-      subtitle={`${from} → ${to}`}
+      subtitle={`${from} to ${to}`}
       onClose={onClose}
       footer={
         <>
           <Button label="Cancel" variant="ghost" onClick={onClose} />
           <Button
-            label={busy ? 'Connecting…' : 'Add edge'}
+            label={busy ? 'Connecting' : 'Add edge'}
             variant="primary"
             isDisabled={busy}
             onClick={() => {
@@ -216,25 +215,19 @@ export function EdgeModal({
   );
 }
 
-export function StickyModal({
-  onClose,
-  onCreate,
-}: {
-  onClose: () => void;
-  onCreate: (text: string) => Promise<void>;
-}): React.ReactElement {
+export function StickyModal({ onClose, onCreate }: { onClose: () => void; onCreate: (text: string) => Promise<void> }): React.ReactElement {
   const [text, setText] = useState('');
   const [busy, setBusy] = useState(false);
   return (
     <Modal
       title="Add sticky note"
-      subtitle="Sticky notes live in the human-owned layout sidecar. Agents never touch them."
+      subtitle="Sticky notes live in the human-owned layout file. Agents never touch them."
       onClose={onClose}
       footer={
         <>
           <Button label="Cancel" variant="ghost" onClick={onClose} />
           <Button
-            label={busy ? 'Adding…' : 'Add note'}
+            label={busy ? 'Adding' : 'Add note'}
             variant="primary"
             isDisabled={!text.trim() || busy}
             onClick={() => {
@@ -247,7 +240,7 @@ export function StickyModal({
     >
       <label className="field">
         <span>Text</span>
-        <textarea autoFocus rows={4} value={text} onChange={(event) => setText(event.target.value)} placeholder="This is where the confusing part starts…" />
+        <textarea autoFocus rows={4} value={text} onChange={(event) => setText(event.target.value)} placeholder="This is where the confusing part starts." />
       </label>
     </Modal>
   );
@@ -272,13 +265,13 @@ export function SettingsModal({
   return (
     <Modal
       title="Settings"
-      subtitle="Changes are written to .vibemap/config.yaml and rules files are regenerated."
+      subtitle="Changes are written to .vibemap/config.yaml and the agent guide is regenerated."
       onClose={onClose}
       footer={
         <>
           <Button label="Close" variant="ghost" onClick={onClose} />
           <Button
-            label={busy ? 'Saving…' : 'Save'}
+            label={busy ? 'Saving' : 'Save'}
             variant="primary"
             isDisabled={busy}
             onClick={() => {
@@ -300,8 +293,8 @@ export function SettingsModal({
             value={mode}
             onChange={(val) => setMode(val as ProjectConfig['tracking']['mode'])}
             options={[
-              { value: 'every-change', label: 'every-change' },
-              { value: 'per-phase', label: 'per-phase' },
+              { value: 'every-change', label: 'every change' },
+              { value: 'per-phase', label: 'per phase' },
               { value: 'manual', label: 'manual' },
               { value: 'off', label: 'off' },
             ]}
@@ -317,8 +310,9 @@ export function SettingsModal({
             ]}
           />
         </div>
-        <p className="muted small">The agent guide is rewritten when you save. Hooks remind agents to update maps.</p>
+        <p className="muted small">Saving rewrites the agent guide. Hooks remind agents to update maps.</p>
       </div>
+
       <div className="settings-section">
         <h3>Agents</h3>
         <div className="chip-list">
@@ -327,39 +321,39 @@ export function SettingsModal({
               {agent}
             </Badge>
           ))}
-          {!project.config.agents.length ? <span className="muted">None configured.</span> : null}
+          {!project.config.agents.length ? <span className="muted small">None configured.</span> : null}
         </div>
-        <p className="muted small">Run <code>vibemap agents sync</code> to rewrite rules files.</p>
+        <p className="muted small">
+          Run <code>vibemap agents sync</code> to rewrite rules files.
+        </p>
       </div>
+
       <div className="settings-section">
-        <h3>Theme &amp; Appearance</h3>
-        {onThemeChange && (
-          <div style={{ marginBottom: '14px' }}>
+        <h3>Appearance</h3>
+        {onThemeChange ? (
+          <div className="settings-row">
             <Selector
-              label="Interface Theme"
+              label="Interface theme"
               value={themeMode ?? 'light'}
               onChange={(val) => onThemeChange(val as 'light' | 'dark')}
               options={[
-                { value: 'light', label: 'Light (default)' },
+                { value: 'light', label: 'Light' },
                 { value: 'dark', label: 'Dark' },
               ]}
             />
           </div>
-        )}
+        ) : null}
         <div className="kv">
-          <span>Font</span>
+          <span>Diagram font</span>
           <strong>{project.theme.font}</strong>
         </div>
         <div className="kv">
-          <span>Roughness</span>
-          <strong>{project.theme.roughness}</strong>
-        </div>
-        <div className="kv">
-          <span>Gap</span>
+          <span>Node gap</span>
           <strong>{project.theme.gap}px</strong>
         </div>
-        <p className="muted small">Edit .vibemap/theme.yaml to customise map styling; the viewer reloads it live.</p>
+        <p className="muted small">Edit .vibemap/theme.yaml to customise the diagram. The viewer reloads it live.</p>
       </div>
+
       <div className="settings-section">
         <h3>Privacy</h3>
         <div className="kv">
@@ -372,9 +366,11 @@ export function SettingsModal({
         </div>
         <div className="kv">
           <span>Server</span>
-          <code>{project.server.host}:{project.server.port}</code>
+          <code>
+            {project.server.host}:{project.server.port}
+          </code>
         </div>
-        <p className="muted small">Local-only. No network calls except this localhost server.</p>
+        <p className="muted small">Local only. No network calls except this localhost server.</p>
       </div>
     </Modal>
   );
@@ -382,15 +378,15 @@ export function SettingsModal({
 
 export function ShortcutsModal({ onClose }: { onClose: () => void }): React.ReactElement {
   const rows = [
-    ['Ctrl / ⌘ + K', 'Search maps, nodes, changes and notes'],
-    ['G then M / C / T / P / N / V', 'Switch sections'],
+    ['Ctrl or Cmd + K', 'Search maps, nodes, changes and notes'],
+    ['G then M / C / T / P / N / V', 'Switch section'],
     ['E', 'Toggle edit mode'],
     ['B', 'Toggle beginner mode'],
-    ['F', 'Fit canvas to screen'],
-    ['[ / ]', 'Previous / next diff change'],
-    ['Space', 'Play / pause walkthrough'],
-    ['← / →', 'Step walkthrough'],
-    ['Esc', 'Clear selection / close'],
+    ['F', 'Fit diagram to the screen'],
+    ['[ or ]', 'Previous or next changed node'],
+    ['Space', 'Play or pause a walkthrough'],
+    ['Left or right arrow', 'Step a walkthrough'],
+    ['Esc', 'Clear selection or close'],
     ['?', 'This dialog'],
   ];
   return (
@@ -399,7 +395,7 @@ export function ShortcutsModal({ onClose }: { onClose: () => void }): React.Reac
         <TableBody>
           {rows.map(([key, action]) => (
             <TableRow key={key}>
-              <TableCell style={{ width: '120px' }}>
+              <TableCell style={{ width: '160px' }}>
                 <kbd>{key}</kbd>
               </TableCell>
               <TableCell>{action}</TableCell>
@@ -414,33 +410,29 @@ export function ShortcutsModal({ onClose }: { onClose: () => void }): React.Reac
 export function TourModal({ onClose }: { onClose: () => void }): React.ReactElement {
   const [step, setStep] = useState(0);
   const steps = [
-    ['Your map tree', 'Every folder under .vibemap/maps/ appears here. Red badges mean validation errors; a blue dot means drift is pending.'],
-    ['The canvas', 'The agent describes nodes and edges; VibeMap computes the layout, shapes and colours. Dashed nodes are declared but not verifiable.'],
-    ['The inspector', 'Click a node to see its code refs, evidence and connections. In Edit mode you can change labels, pin positions and lock a node.'],
-    ['History and changes', 'The Changes tab explains what changed and why. Timeline lets you scrub every commit and local snapshot.'],
-    ['Coverage', 'Coverage shows which code is still unmapped. Copy a prompt into your agent to close the gap.'],
+    ['Your map list', 'Every folder under .vibemap/maps appears in the left panel. A red badge means validation errors, a blue dot means code drifted since the map was updated.'],
+    ['The canvas', 'The agent describes nodes and edges; VisuCode computes the layout. Dashed nodes are declared but not yet verifiable.'],
+    ['The inspector', 'Select a node to see its code refs, evidence and connections. Edit mode lets you change labels, pin positions and lock a node.'],
+    ['Changes and timeline', 'The Changes tab explains what changed and why. Timeline lets you look at any commit or local snapshot.'],
+    ['Coverage', 'Coverage shows which code is not mapped yet. Copy a prompt into your agent to close the gap.'],
   ];
   const current = steps[step]!;
   return (
     <Modal
-      title={`Welcome to VibeMap — ${step + 1}/${steps.length}`}
+      title="Welcome to VisuCode"
       onClose={onClose}
       footer={
         <>
           <Button label="Skip" variant="ghost" onClick={onClose} />
-          {step > 0 ? (
-            <Button label="Back" variant="ghost" onClick={() => setStep(step - 1)} />
-          ) : null}
-          <Button
-            label={step === steps.length - 1 ? 'Start mapping' : 'Next'}
-            variant="primary"
-            onClick={() => (step === steps.length - 1 ? onClose() : setStep(step + 1))}
-          />
+          {step > 0 ? <Button label="Back" variant="ghost" onClick={() => setStep(step - 1)} /> : null}
+          <Button label={step === steps.length - 1 ? 'Start mapping' : 'Next'} variant="primary" onClick={() => (step === steps.length - 1 ? onClose() : setStep(step + 1))} />
         </>
       }
     >
       <div className="tour-step">
-        <span className="eyebrow">Step {step + 1}</span>
+        <span className="tour-step-count">
+          Step {step + 1} of {steps.length}
+        </span>
         <h3>{current[0]}</h3>
         <p>{current[1]}</p>
       </div>
@@ -462,7 +454,7 @@ export function PromptModal({
   return (
     <Modal
       title={title}
-      subtitle="Copy this into your coding agent. It is self-contained but points at the canonical guide."
+      subtitle="Copy this into your coding agent. It points at the canonical guide."
       onClose={onClose}
       wide
       footer={
@@ -535,14 +527,12 @@ export function SearchModal({
       }}
       label="Search"
       emptySearchText="No matches."
-      emptyBootstrapText="Type to search maps, nodes, changes, notes…"
+      emptyBootstrapText="Type to search maps, nodes, changes and notes."
       width={640}
       renderItem={(item) => (
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%' }}>
-          <Badge tone={item.auxiliaryData?.type === 'node' ? 'info' : item.auxiliaryData?.type === 'change' ? 'ok' : 'neutral'}>
-            {item.auxiliaryData?.type ?? 'item'}
-          </Badge>
-          <span style={{ flex: 1, fontWeight: 500 }}>{item.label}</span>
+        <div className="search-result">
+          <Badge tone={item.auxiliaryData?.type === 'node' ? 'info' : item.auxiliaryData?.type === 'change' ? 'ok' : 'neutral'}>{item.auxiliaryData?.type ?? 'item'}</Badge>
+          <span className="search-result-label">{item.label}</span>
           <span className="muted small">{item.auxiliaryData?.map ?? item.auxiliaryData?.id}</span>
         </div>
       )}

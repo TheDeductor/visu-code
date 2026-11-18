@@ -34,7 +34,6 @@
     "chokidar": "^4.0.3",
     "commander": "^14.0.0",
     "elkjs": "^0.12.1",
-    "roughjs": "^4.6.6",
     "typescript": "^5.9.3",
     "ws": "^8.18.3",
     "yaml": "^2.8.1",

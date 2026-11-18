@@ -124,7 +124,7 @@ export async function validateProjectAsync(project: Project, opts: CheckOptions 
         quality = readJsonFile<ReturnType<typeof layoutQuality>>(cachePath);
       }
     } catch {
-      // Cache miss or corrupt — recompute.
+      // Cache miss or corrupt: recompute.
     }
 
     if (!quality) {
@@ -141,7 +141,7 @@ export async function validateProjectAsync(project: Project, opts: CheckOptions 
           // Cache write failure is non-fatal.
         }
       } catch {
-        // Layout failure — skip layout-quality checks for this map.
+        // Layout failure: skip layout-quality checks for this map.
         continue;
       }
     }

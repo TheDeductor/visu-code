@@ -57,10 +57,10 @@ export async function prSummary(root: string, options: PrSummaryOptions = {}): P
   const project = loadProject(root);
   const base = options.base ?? 'main';
   if (!git(project, ['rev-parse', '--verify', base])) {
-    return `## VibeMap\n\nBase branch \`${base}\` was not found. Pass \`--base <ref>\`.\n`;
+    return `## VisuCode\n\nBase branch \`${base}\` was not found. Pass \`--base <ref>\`.\n`;
   }
   const files = changedMapFiles(project, base);
-  const lines: string[] = ['## VibeMap', ''];
+  const lines: string[] = ['## VisuCode', ''];
   if (!files.length) {
     lines.push('No map changes in this pull request.', '');
     lines.push('> If code changed without map updates, run `vibemap drift` to find gaps.');
@@ -84,7 +84,7 @@ export async function prSummary(root: string, options: PrSummaryOptions = {}): P
     lines.push(`| \`${mapId}\` | ${summary} | +${added} / −${removed} | +${diff?.addedEdges.length ?? 0} / −${diff?.removedEdges.length ?? 0} |`);
     const before = baseMap ? renderMermaid(baseMap).trimEnd() : null;
     const after = headMap ? renderMermaid(headMap).trimEnd() : null;
-    details.push(`<details><summary><code>${mapId}</code> — before / after</summary>\n`);
+    details.push(`<details><summary><code>${mapId}</code>: before / after</summary>\n`);
     if (before) details.push('**Before**\n\n```mermaid\n' + before + '\n```\n');
     if (after) details.push('**After**\n\n```mermaid\n' + after + '\n```\n');
     details.push('</details>\n');
@@ -92,11 +92,11 @@ export async function prSummary(root: string, options: PrSummaryOptions = {}): P
   lines.push('', ...details);
   if (check.errors.length) {
     lines.push('### Validation errors', '');
-    for (const err of check.errors.slice(0, 20)) lines.push(`- **${err.code}** \`${err.file}${err.line ? `:${err.line}` : ''}\` — ${err.message}`);
+    for (const err of check.errors.slice(0, 20)) lines.push(`- **${err.code}** \`${err.file}${err.line ? `:${err.line}` : ''}\`: ${err.message}`);
   }
   if (check.warnings.length) {
     lines.push('', '<details><summary>Validation warnings</summary>', '');
-    for (const warning of check.warnings.slice(0, 20)) lines.push(`- **${warning.code}** \`${warning.file}\` — ${warning.message}`);
+    for (const warning of check.warnings.slice(0, 20)) lines.push(`- **${warning.code}** \`${warning.file}\`: ${warning.message}`);
     lines.push('', '</details>');
   }
   return `${lines.join('\n')}\n`;

@@ -1,5 +1,5 @@
 /**
- * Shared domain types for VibeMap.
+ * Shared domain types for VisuCode.
  *
  * These types are the contract between the CLI, server, scanner and viewer.
  * Everything here is plain data and safe to import from the browser.

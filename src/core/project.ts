@@ -68,7 +68,7 @@ export function formatZodError(err: z.ZodError, file: string): string {
   return err.issues
     .map((issue) => {
       const at = issue.path.length ? issue.path.join('.') : '(root)';
-      return `${file}:${at} — ${issue.message}`;
+      return `${file}:${at}: ${issue.message}`;
     })
     .join('\n');
 }

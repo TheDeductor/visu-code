@@ -34,7 +34,7 @@ export function ejectProject(root: string, purge = false): EjectResult {
 }
 
 export function ejectSummary(result: EjectResult, root: string): string {
-  const lines = ['VibeMap integration removed.'];
+  const lines = ['VisuCode integration removed.'];
   if (result.removed.length) lines.push(`Removed: ${result.removed.join(', ')}`);
   if (result.skipped.length) lines.push(`Left untouched: ${result.skipped.join(', ')}`);
   if (result.purged) lines.push('Project data (.vibemap/) was purged.');

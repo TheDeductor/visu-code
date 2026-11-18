@@ -10,7 +10,7 @@ import { parseYamlText } from '../../src/core/yaml.js';
 const theme: Theme = defaultTheme();
 
 function loadMapFixture(name: string): VibeMap {
-  const filePath = path.join(process.cwd(), '.vibemap', 'maps', `${name}.vmap.yaml`);
+  const filePath = path.join(process.cwd(), 'test', 'layout', 'maps', `${name}.vmap.yaml`);
   const text = fs.readFileSync(filePath, 'utf8');
   return parseYamlText(text).doc.toJS() as VibeMap;
 }

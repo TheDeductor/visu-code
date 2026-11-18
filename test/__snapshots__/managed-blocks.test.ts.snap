@@ -2,7 +2,7 @@
 
 exports[`managed rule blocks > writes a managed block for aider 1`] = `
 "<!-- vibemap:start -->
-## VibeMap (visual project memory)
+## VisuCode (visual project memory)
 Read \`.vibemap/AGENT_GUIDE.md\` once per session.
 - Before editing: \`vibemap context --area <path>\`.
 - After editing: \`vibemap patch\`, \`vibemap check\`, \`vibemap change add\`.
@@ -17,7 +17,7 @@ Read \`.vibemap/AGENT_GUIDE.md\` once per session.
 
 exports[`managed rule blocks > writes a managed block for claude-code 1`] = `
 "<!-- vibemap:start -->
-## VibeMap (visual project memory)
+## VisuCode (visual project memory)
 Read \`.vibemap/AGENT_GUIDE.md\` once per session.
 - Before editing: \`vibemap context --area <path>\`.
 - After editing: \`vibemap patch\`, \`vibemap check\`, \`vibemap change add\`.
@@ -32,7 +32,7 @@ Read \`.vibemap/AGENT_GUIDE.md\` once per session.
 
 exports[`managed rule blocks > writes a managed block for codex 1`] = `
 "<!-- vibemap:start -->
-## VibeMap (visual project memory)
+## VisuCode (visual project memory)
 Read \`.vibemap/AGENT_GUIDE.md\` once per session.
 - Before editing: \`vibemap context --area <path>\`.
 - After editing: \`vibemap patch\`, \`vibemap check\`, \`vibemap change add\`.
@@ -47,7 +47,7 @@ Read \`.vibemap/AGENT_GUIDE.md\` once per session.
 
 exports[`managed rule blocks > writes a managed block for copilot 1`] = `
 "<!-- vibemap:start -->
-## VibeMap (visual project memory)
+## VisuCode (visual project memory)
 Read \`.vibemap/AGENT_GUIDE.md\` once per session.
 - Before editing: \`vibemap context --area <path>\`.
 - After editing: \`vibemap patch\`, \`vibemap check\`, \`vibemap change add\`.
@@ -62,12 +62,12 @@ Read \`.vibemap/AGENT_GUIDE.md\` once per session.
 
 exports[`managed rule blocks > writes a managed block for cursor 1`] = `
 "---
-description: VibeMap visual project memory
+description: VisuCode visual project memory
 alwaysApply: true
 ---
 
 <!-- vibemap:start -->
-## VibeMap (visual project memory)
+## VisuCode (visual project memory)
 Read \`.vibemap/AGENT_GUIDE.md\` once per session.
 - Before editing: \`vibemap context --area <path>\`.
 - After editing: \`vibemap patch\`, \`vibemap check\`, \`vibemap change add\`.
@@ -81,7 +81,7 @@ Read \`.vibemap/AGENT_GUIDE.md\` once per session.
 
 exports[`managed rule blocks > writes a managed block for gemini 1`] = `
 "<!-- vibemap:start -->
-## VibeMap (visual project memory)
+## VisuCode (visual project memory)
 Read \`.vibemap/AGENT_GUIDE.md\` once per session.
 - Before editing: \`vibemap context --area <path>\`.
 - After editing: \`vibemap patch\`, \`vibemap check\`, \`vibemap change add\`.
@@ -96,7 +96,7 @@ Read \`.vibemap/AGENT_GUIDE.md\` once per session.
 
 exports[`managed rule blocks > writes a managed block for windsurf 1`] = `
 "<!-- vibemap:start -->
-## VibeMap (visual project memory)
+## VisuCode (visual project memory)
 Read \`.vibemap/AGENT_GUIDE.md\` once per session.
 - Before editing: \`vibemap context --area <path>\`.
 - After editing: \`vibemap patch\`, \`vibemap check\`, \`vibemap change add\`.

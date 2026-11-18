@@ -86,7 +86,8 @@ lines.push('');
 let total = 0;
 for (const root of roots) {
   const files = collectMaps(path.join(root, '.vibemap', 'maps'));
-  lines.push(`## ${root}`);
+  const label = path.relative(process.cwd(), root).split(path.sep).join('/') || '.';
+  lines.push(`## ${label}`);
   lines.push('');
   if (!files.length) {
     lines.push('No `.vibemap/maps/**/*.vmap.yaml` found under this root.');

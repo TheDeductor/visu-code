@@ -2,11 +2,11 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Button } from '@astryxdesign/core/Button';
 import { IconButton } from '@astryxdesign/core/IconButton';
 import { Token } from '@astryxdesign/core/Token';
-import { Card } from '@astryxdesign/core/Card';
 import { List, ListItem } from '@astryxdesign/core/List';
-import type { ChangeEntry, CheckReport, CoverageReport, HistoryPoint, Issue, MapSummary, Phase, Suggestion } from '@core/types';
+import type { ChangeEntry, CheckReport, CoverageReport, HistoryPoint, Issue, Phase, Suggestion } from '@core/types';
 import { api, type NoteEntry, type PhaseProgress } from '../api';
 import { Badge, EmptyState, ProgressBar, Spinner } from './ui';
+import { Icon } from './icons';
 import { classNames, copyText, formatDate, issueLocation, mapIdFromIssueFile, parseBodySections, promptForFile, relativeTime } from '../util';
 
 export function ChangesPanel({
@@ -22,18 +22,20 @@ export function ChangesPanel({
 }): React.ReactElement {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const selected = changes.find((change) => change.id === selectedId) ?? changes[0];
-  if (loading && !changes.length) return <Spinner label="Loading change log…" />;
+  if (loading && !changes.length) return <Spinner label="Loading change log" />;
   if (!changes.length) {
     return (
-      <EmptyState icon="≋" title="No changes recorded yet">
-        <p>Ask your agent to run <code>vibemap change add</code> after updating maps. Each entry gets a plain-language What/Why/How.</p>
-        <p className="muted">In Claude Code, the stop hook can remind it automatically.</p>
+      <EmptyState icon="history" title="No changes recorded yet">
+        <p>
+          Ask your agent to run <code>vibemap change add</code> after updating maps. Each entry gets a plain-language What, Why and How.
+        </p>
+        <p>In Claude Code, the stop hook can remind it automatically.</p>
       </EmptyState>
     );
   }
   return (
     <div className="changes-layout">
-      <div className="change-list" role="list">
+      <div className="change-list">
         <List density="compact" hasDividers>
           {changes.map((change) => (
             <ListItem
@@ -43,21 +45,21 @@ export function ChangesPanel({
               label={
                 <div className="change-card-top">
                   <strong>{change.title}</strong>
-                  <span className="muted">{relativeTime(change.date)}</span>
+                  <span className="muted small">{relativeTime(change.date)}</span>
                 </div>
               }
               description={
                 <>
-                  <div className="change-badges" style={{ marginTop: '4px', marginBottom: '4px' }}>
+                  <div className="change-badges">
                     <Badge tone="neutral">{change.type}</Badge>
                     {change.phase ? <Badge tone="info">{change.phase}</Badge> : null}
-                    {change.commit ? <Badge tone="ok">sealed</Badge> : <Badge tone="warn">unsealed</Badge>}
+                    {change.commit ? <Badge tone="ok">Committed</Badge> : <Badge tone="warn">Not committed</Badge>}
                   </div>
                   <div className="delta-chips">
                     <Token label={`+${change.delta.added_nodes.length}`} color="green" size="sm" />
                     <Token label={`~${change.delta.modified_nodes.length}`} color="orange" size="sm" />
-                    <Token label={`−${change.delta.removed_nodes.length}`} color="red" size="sm" />
-                    <span className="muted">{change.maps.join(', ')}</span>
+                    <Token label={`-${change.delta.removed_nodes.length}`} color="red" size="sm" />
+                    <span className="muted small">{change.maps.join(', ')}</span>
                   </div>
                 </>
               }
@@ -69,21 +71,18 @@ export function ChangesPanel({
         <article className="change-detail">
           <header>
             <div>
-              <span className="eyebrow">{formatDate(selected.date)}</span>
               <h2>{selected.title}</h2>
+              <div className="change-meta">
+                <span>{formatDate(selected.date)}</span>
+                <span>by {selected.author}</span>
+                {selected.commit ? <code>{selected.commit}</code> : <span>Not committed</span>}
+              </div>
             </div>
             <div className="change-detail-actions">
               <Button label="View diff" variant="secondary" size="sm" onClick={() => onDiff(selected)} />
-              {selected.maps[0] ? (
-                <Button label="Open map" variant="ghost" size="sm" onClick={() => onOpenMap(selected.maps[0]!)} />
-              ) : null}
+              {selected.maps[0] ? <Button label="Open map" variant="ghost" size="sm" onClick={() => onOpenMap(selected.maps[0]!)} /> : null}
             </div>
           </header>
-          <div className="change-meta">
-            <span>by {selected.author}</span>
-            <span>{selected.maps.join(', ')}</span>
-            {selected.commit ? <code>{selected.commit}</code> : <span>unsealed</span>}
-          </div>
           {parseBodySections(selected.body).map((section) => (
             <section key={section.heading} className="change-section">
               <h3>{section.heading}</h3>
@@ -118,30 +117,31 @@ export function TimelinePanel({
   onDiff: (point: HistoryPoint) => void;
   onBack: () => void;
 }): React.ReactElement {
-  if (!currentMap) return <EmptyState title="Open a map to see its timeline" />;
-  if (loading && !history.length) return <Spinner label="Loading history…" />;
+  if (!currentMap) return <EmptyState icon="clock" title="Open a map to see its timeline" />;
+  if (loading && !history.length) return <Spinner label="Loading history" />;
   if (!history.length) {
     return (
-      <EmptyState icon="◷" title="No history for this map yet">
-        <p>Commit the project or save a map to start a timeline. VibeMap keeps uncommitted journal points, so you can time-travel before the first commit too.</p>
+      <EmptyState icon="clock" title="No history for this map yet">
+        <p>Commit the project or save the map to start a timeline. VisuCode keeps local journal points, so you can look back before the first commit.</p>
       </EmptyState>
     );
   }
   return (
     <div className="timeline-panel">
-      <header>
+      <div className="page-head">
         <div>
-          <span className="eyebrow">Time travel</span>
           <h2>{currentMap}</h2>
-          <p className="muted">Solid ticks are git commits, hollow ticks are local journal points. Drag the slider to inspect a version.</p>
+          <div className="page-head-meta">
+            <span>Filled ticks are commits, thin ticks are local journal points.</span>
+          </div>
         </div>
         {selectedRev ? (
           <div className="timeline-actions">
-            <Button label="Compare with now" variant="secondary" size="sm" onClick={() => onDiff(history.find((h) => h.rev === selectedRev) ?? history[0]!)} />
+            <Button label="Compare with now" variant="secondary" size="sm" onClick={() => onDiff(history.find((point) => point.rev === selectedRev) ?? history[0]!)} />
             <Button label="Back to now" variant="ghost" size="sm" onClick={onBack} />
           </div>
         ) : null}
-      </header>
+      </div>
       <div className="timeline-rail">
         <input
           type="range"
@@ -158,7 +158,7 @@ export function TimelinePanel({
               type="button"
               className={classNames('tick', point.kind, selectedRev === point.rev && 'active')}
               onClick={() => onSelect(point)}
-              title={`${formatDate(point.ts)} — ${point.summary}`}
+              title={`${formatDate(point.ts)} · ${point.summary}`}
               aria-label={`${point.summary} at ${formatDate(point.ts)}`}
             />
           ))}
@@ -174,7 +174,7 @@ export function TimelinePanel({
                 {formatDate(point.ts)} · {point.kind === 'git' ? `commit ${point.commit?.slice(0, 8)}` : point.origin ?? 'journal'}
               </span>
             </span>
-            {selectedRev === point.rev ? <Badge tone="info">viewing</Badge> : null}
+            {selectedRev === point.rev ? <Badge tone="info">Viewing</Badge> : null}
           </button>
         ))}
       </div>
@@ -200,14 +200,15 @@ export function PhasesPanel({
   onCreate: (title: string) => Promise<void>;
 }): React.ReactElement {
   const [title, setTitle] = useState('');
-  if (loading && !phases.length) return <Spinner label="Loading phases…" />;
+  if (loading && !phases.length) return <Spinner label="Loading phases" />;
   return (
     <div className="phases-panel">
-      <header>
+      <div className="page-head">
         <div>
-          <span className="eyebrow">Roadmap</span>
           <h2>Phases</h2>
-          <p className="muted">Plan first, then build. Planned nodes are ghosted on the canvas; finish a phase to snapshot the maps.</p>
+          <div className="page-head-meta">
+            <span>Plan first, then build. Planned nodes are outlined on the canvas; finishing a phase snapshots the maps.</span>
+          </div>
         </div>
         <form
           className="inline-form"
@@ -217,42 +218,44 @@ export function PhasesPanel({
             void onCreate(title.trim()).then(() => setTitle(''));
           }}
         >
-          <input value={title} onChange={(event) => setTitle(event.target.value)} placeholder="New phase title" />
+          <input value={title} onChange={(event) => setTitle(event.target.value)} placeholder="New phase title" aria-label="New phase title" />
           <Button label="Add phase" type="submit" variant="secondary" size="sm" />
         </form>
-      </header>
-      {!phases.length ? <EmptyState icon="◇" title="No phases yet" ><p>Create a phase to group work, or ask your agent to plan one.</p></EmptyState> : null}
+      </div>
+      {!phases.length ? (
+        <EmptyState icon="circleDot" title="No phases yet">
+          <p>Create a phase to group work, or ask your agent to plan one.</p>
+        </EmptyState>
+      ) : null}
       <div className="phase-grid">
         {phases.map((phase) => {
           const percent = phase.total ? Math.round((phase.built / phase.total) * 100) : 0;
           return (
-            <Card key={phase.id} className={classNames('phase-card', `phase-${phase.status}`)} padding={3}>
+            <div key={phase.id} className={classNames('phase-card', `phase-${phase.status}`)}>
               <header>
                 <div>
-                  <span className="eyebrow">{phase.id}</span>
                   <h3>{phase.title}</h3>
+                  <div className="page-head-meta">
+                    <span>{phase.id}</span>
+                  </div>
                 </div>
                 <Badge tone={phase.status === 'done' ? 'ok' : phase.status === 'active' ? 'info' : 'neutral'}>{phase.status}</Badge>
               </header>
-              {phase.goal ? <p>{phase.goal}</p> : <p className="muted">No goal set.</p>}
+              <p>{phase.goal ?? 'No goal set.'}</p>
               <ProgressBar percent={percent} tone={percent === 100 ? 'ok' : 'info'} />
               <div className="phase-meta">
-                <span>{phase.built}/{phase.total} built</span>
+                <span>
+                  {phase.built}/{phase.total} built
+                </span>
                 <span>{phase.planned} planned</span>
               </div>
               <div className="phase-actions">
-                {phase.status !== 'active' && phase.status !== 'done' ? (
-                  <Button label="Start" variant="secondary" size="sm" onClick={() => onStart(phase.id)} />
-                ) : null}
-                {phase.status !== 'done' ? (
-                  <Button label="Finish" variant="ghost" size="sm" onClick={() => onDone(phase.id)} />
-                ) : null}
-                {phase.snapshot ? (
-                  <Button label="View snapshot" variant="ghost" size="sm" onClick={() => onSnapshot(phase)} />
-                ) : null}
-                <Button label="Show only this phase" variant="ghost" size="sm" onClick={() => onFilter(phase.id)} />
+                {phase.status !== 'active' && phase.status !== 'done' ? <Button label="Start" variant="secondary" size="sm" onClick={() => onStart(phase.id)} /> : null}
+                {phase.status !== 'done' ? <Button label="Finish" variant="ghost" size="sm" onClick={() => onDone(phase.id)} /> : null}
+                {phase.snapshot ? <Button label="View snapshot" variant="ghost" size="sm" onClick={() => onSnapshot(phase)} /> : null}
+                <Button label="Filter canvas" variant="ghost" size="sm" onClick={() => onFilter(phase.id)} />
               </div>
-            </Card>
+            </div>
           );
         })}
       </div>
@@ -369,6 +372,8 @@ export function NotesPanel({
   const [draft, setDraft] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [creating, setCreating] = useState(false);
+  const [newTitle, setNewTitle] = useState('');
   const current = selected ?? notes[0]?.path ?? null;
 
   useEffect(() => {
@@ -392,7 +397,7 @@ export function NotesPanel({
   }, [current, notes.length]);
 
   const createNote = async (): Promise<void> => {
-    const title = window.prompt('Note title');
+    const title = newTitle.trim();
     if (!title) return;
     const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'note';
     const body = `---\nschema: 1\ntitle: ${title}\nmaps: []\nnodes: []\n---\n\n# ${title}\n\n`;
@@ -400,6 +405,8 @@ export function NotesPanel({
       const created = await api.saveNote(`${slug}.md`, body);
       onRefresh();
       setSelected(created.path);
+      setCreating(false);
+      setNewTitle('');
     } catch (err) {
       setError((err as Error).message);
     }
@@ -421,14 +428,27 @@ export function NotesPanel({
     }
   };
 
-  if (loading && !notes.length) return <Spinner label="Loading notes…" />;
+  if (loading && !notes.length) return <Spinner label="Loading notes" />;
+
   return (
     <div className="notes-layout">
       <div className="notes-list">
         <div className="notes-list-head">
-          <strong>Notes</strong>
-          <IconButton label="New note" tooltip="New note" icon={<span aria-hidden="true">+</span>} variant="ghost" size="sm" onClick={() => void createNote()} />
+          <span>Notes</span>
+          <IconButton label="New note" tooltip="New note" icon={<Icon name="plus" />} variant="ghost" size="sm" onClick={() => setCreating((value) => !value)} />
         </div>
+        {creating ? (
+          <form
+            className="inline-form note-new"
+            onSubmit={(event) => {
+              event.preventDefault();
+              void createNote();
+            }}
+          >
+            <input value={newTitle} onChange={(event) => setNewTitle(event.target.value)} placeholder="Note title" aria-label="Note title" autoFocus />
+            <Button label="Add" type="submit" size="sm" variant="secondary" />
+          </form>
+        ) : null}
         {notes.map((item) => (
           <button key={item.path} type="button" className={classNames('note-row', current === item.path && 'active')} onClick={() => setSelected(item.path)}>
             <strong>{item.title}</strong>
@@ -442,13 +462,15 @@ export function NotesPanel({
           <>
             <header>
               <div>
-                <span className="eyebrow">Note</span>
                 <h2>{note.title}</h2>
+                <div className="page-head-meta">
+                  <span>{note.path.replace('.vibemap/notes/', '')}</span>
+                </div>
               </div>
               <div className="change-detail-actions">
                 {editing ? (
                   <>
-                    <Button label={busy ? 'Saving…' : 'Save'} variant="primary" size="sm" isDisabled={busy} onClick={() => void save()} />
+                    <Button label={busy ? 'Saving' : 'Save'} variant="primary" size="sm" isDisabled={busy} onClick={() => void save()} />
                     <Button label="Cancel" variant="ghost" size="sm" onClick={() => setEditing(false)} />
                   </>
                 ) : (
@@ -474,8 +496,8 @@ export function NotesPanel({
             {editing ? <textarea className="note-editor" value={draft} onChange={(event) => setDraft(event.target.value)} spellCheck={false} /> : <Markdown body={note.body} onOpenNode={onOpenNode} />}
           </>
         ) : (
-          <EmptyState icon="✎" title="No note selected">
-            <p>Notes hold the long "why" explanations that would make node descriptions too long.</p>
+          <EmptyState icon="pencil" title="No note selected">
+            <p>Notes hold the longer explanations that would make a node description too long.</p>
           </EmptyState>
         )}
       </div>
@@ -496,24 +518,29 @@ export function CoveragePanel({
   onOpenNode: (map: string, node: string) => void;
   onCopy: (text: string, message?: string) => void;
 }): React.ReactElement {
-  if (loading && !coverage) return <Spinner label="Computing coverage…" />;
-  if (!coverage) return <EmptyState title="Coverage is unavailable" />;
+  if (loading && !coverage) return <Spinner label="Computing coverage" />;
+  if (!coverage) return <EmptyState icon="inbox" title="Coverage is not available" />;
   return (
     <div className="coverage-panel">
-      <Card padding={4} style={{ marginBottom: '16px' }}>
-        <header className="coverage-head" style={{ padding: 0, border: 'none' }}>
-          <div>
-            <span className="eyebrow">Ground truth</span>
-            <h2>{coverage.percent}% coverage</h2>
-            <p className="muted">
+      <div className="page-head">
+        <div>
+          <h2>Coverage</h2>
+          <div className="page-head-meta">
+            <span>
               {coverage.coveredFiles} of {coverage.totalFiles} source files are referenced by at least one map. Target {coverage.target}%.
-            </p>
+            </span>
           </div>
-          <div className="coverage-ring" style={{ background: `conic-gradient(var(--accent) ${coverage.percent * 3.6}deg, var(--line) 0)` }}>
-            <span>{coverage.percent}%</span>
-          </div>
-        </header>
-      </Card>
+        </div>
+      </div>
+
+      <div className="coverage-summary">
+        <strong className="tabular">{coverage.percent}%</strong>
+        <div className="coverage-bar">
+          <ProgressBar percent={coverage.percent} tone={coverage.percent >= coverage.target ? 'ok' : 'warn'} />
+        </div>
+        <span>{coverage.unmapped.length} files unmapped</span>
+      </div>
+
       <div className="coverage-grid">
         <section>
           <h3>By directory</h3>
@@ -521,7 +548,9 @@ export function CoveragePanel({
             <div key={dir.dir} className="dir-row">
               <div className="dir-label">
                 <code>{dir.dir}</code>
-                <span className="muted">{dir.covered}/{dir.total}</span>
+                <span className="muted tabular">
+                  {dir.covered}/{dir.total}
+                </span>
               </div>
               <ProgressBar percent={dir.percent} tone={dir.percent >= coverage.target ? 'ok' : dir.percent ? 'warn' : 'error'} />
             </div>
@@ -534,7 +563,12 @@ export function CoveragePanel({
               <div key={`${suggestion.kind}-${suggestion.title}`} className="suggestion-row">
                 <div>
                   <strong>{suggestion.title}</strong>
-                  {suggestion.file ? <code>{suggestion.file}{suggestion.line ? `:${suggestion.line}` : ''}</code> : null}
+                  {suggestion.file ? (
+                    <code>
+                      {suggestion.file}
+                      {suggestion.line ? `:${suggestion.line}` : ''}
+                    </code>
+                  ) : null}
                 </div>
                 <Button label="Copy prompt" variant="secondary" size="sm" onClick={() => onCopy(suggestion.prompt, 'Prompt copied')} />
               </div>
@@ -544,8 +578,9 @@ export function CoveragePanel({
           )}
         </section>
       </div>
+
       <section>
-        <h3>Unverified / declared nodes</h3>
+        <h3>Declared, stale and planned nodes</h3>
         {coverage.unverified.length ? (
           <div className="chip-list">
             {coverage.unverified.map((item) => (
@@ -562,6 +597,7 @@ export function CoveragePanel({
           <p className="muted small">Everything is verified or intentionally planned.</p>
         )}
       </section>
+
       <section>
         <h3>Unmapped files ({coverage.unmapped.length})</h3>
         <div className="unmapped-list">
@@ -570,9 +606,7 @@ export function CoveragePanel({
               <ListItem
                 key={file}
                 label={<code>{file}</code>}
-                endContent={
-                  <Button label="Copy prompt" variant="secondary" size="sm" onClick={() => onCopy(promptForFile(file), 'Prompt copied')} />
-                }
+                endContent={<Button label="Copy prompt" variant="secondary" size="sm" onClick={() => onCopy(promptForFile(file), 'Prompt copied')} />}
               />
             ))}
           </List>
@@ -583,44 +617,42 @@ export function CoveragePanel({
 }
 
 export function ProblemsPanel({ report, onOpenIssue, onRunCheck }: { report: CheckReport | null; onOpenIssue: (issue: Issue) => void; onRunCheck: () => void }): React.ReactElement {
-  if (!report) return <Spinner label="Validating…" />;
+  if (!report) return <Spinner label="Validating" />;
   const issues = [...report.errors, ...report.warnings];
   return (
     <div className="problems-panel">
       <div className="problems-head">
         <div>
-          <strong>{report.errors.length} errors</strong>
-          <span className="muted"> · {report.warnings.length} warnings · {report.stats.nodes} nodes · {report.stats.verified} verified</span>
+          <strong>
+            {report.errors.length} errors, {report.warnings.length} warnings
+          </strong>
+          <span className="muted small">
+            {report.stats.nodes} nodes, {report.stats.verified} verified
+          </span>
         </div>
         <div>
           <Button label="Run check" variant="secondary" size="sm" onClick={onRunCheck} />
-          <Button
-            label="Copy JSON"
-            variant="ghost"
-            size="sm"
-            onClick={() => {
-              void copyText(JSON.stringify(report, null, 2));
-            }}
-          />
+          <Button label="Copy JSON" variant="ghost" size="sm" onClick={() => void copyText(JSON.stringify(report, null, 2))} />
         </div>
       </div>
-      {!issues.length ? <p className="problems-empty">✓ No problems. Maps are valid and evidence resolves.</p> : null}
+      {!issues.length ? (
+        <p className="problems-empty">
+          <Icon name="check" size={16} />
+          No problems. Maps are valid and evidence resolves.
+        </p>
+      ) : null}
       <div className="issue-list">
         <List density="compact" hasDividers>
           {issues.map((issue) => (
             <ListItem
               key={`${issue.code}-${issue.file}-${issue.line}-${issue.message}`}
               onClick={() => onOpenIssue(issue)}
-              startContent={
-                <Badge tone={issue.severity === 'error' ? 'error' : 'warn'}>
-                  {issue.code}
-                </Badge>
-              }
+              startContent={<Badge tone={issue.severity === 'error' ? 'error' : 'warn'}>{issue.code}</Badge>}
               label={<strong>{issue.message}</strong>}
               description={
                 <span className="muted small">
                   {issueLocation(issue)}
-                  {issue.hint ? ` — ${issue.hint}` : ''}
+                  {issue.hint ? ` · ${issue.hint}` : ''}
                 </span>
               }
             />
@@ -634,7 +666,7 @@ export function ProblemsPanel({ report, onOpenIssue, onRunCheck }: { report: Che
 export function ActivityPanel({ changes, onOpenMap }: { changes: ChangeEntry[]; onOpenMap: (id: string) => void }): React.ReactElement {
   return (
     <div className="activity-panel">
-      {!changes.length ? <p className="muted">No activity yet.</p> : null}
+      {!changes.length ? <p className="muted small">No activity yet.</p> : null}
       {changes.map((change) => (
         <div key={change.id} className="activity-row">
           <span className="activity-dot" />
@@ -646,25 +678,10 @@ export function ActivityPanel({ changes, onOpenMap }: { changes: ChangeEntry[]; 
           </div>
           <div className="activity-maps">
             {change.maps.slice(0, 2).map((map) => (
-              <button key={map} type="button" className="chip tiny" onClick={() => onOpenMap(map)}>
-                {map}
-              </button>
+              <Token key={map} label={map} color="blue" size="sm" onClick={() => onOpenMap(map)} />
             ))}
           </div>
         </div>
-      ))}
-    </div>
-  );
-}
-
-export function MapListAccessible({ maps, onSelect }: { maps: MapSummary[]; onSelect: (id: string) => void }): React.ReactElement {
-  return (
-    <div className="map-list-accessible">
-      {maps.map((map) => (
-        <button key={map.id} type="button" onClick={() => onSelect(map.id)}>
-          <strong>{map.title}</strong>
-          <span className="muted">{map.id}</span>
-        </button>
       ))}
     </div>
   );

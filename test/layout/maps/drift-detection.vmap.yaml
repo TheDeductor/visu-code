@@ -1,0 +1,126 @@
+schema: 1
+title: Drift Detection and Updates
+level: feature
+direction: right
+summary: "How VibeMap detects that your code changed, identifies which maps are outdated, and how maps get updated and re-validated."
+type: graph
+groups:
+  - id: g-detect
+    label: Detect Changes
+    kind: layer
+  - id: g-identify
+    label: Identify Drift
+    kind: layer
+  - id: g-update
+    label: Update & Re-validate
+    kind: layer
+nodes:
+  - id: git-diff
+    label: git diff / ls-files
+    kind: external
+    group: g-detect
+    description: Git CLI used to list changed, staged and untracked files since HEAD.
+  - id: pending-json
+    label: pending.json (cache)
+    kind: cache
+    group: g-detect
+    description: Written by the post-edit hook after every AI agent file save. Lists recently changed file paths.
+    refs:
+      - path: src/core/drift.ts
+        symbol: pendingPath
+  - id: post-edit-hook
+    label: post-edit hook
+    kind: process
+    group: g-detect
+    description: Runs after every AI agent tool call that writes a file. Appends the file path to pending.json. Very fast — no imports.
+    refs:
+      - path: src/cli/cli.ts
+        symbol: postEditHook
+  - id: compute-drift
+    label: computeDrift()
+    kind: function
+    group: g-identify
+    description: Compares changed files against node refs in all maps. Categorises into direct, unmapped and removedRefs.
+    refs:
+      - path: src/core/drift.ts
+        symbol: computeDrift
+  - id: node-refs
+    label: node refs in maps
+    kind: file
+    group: g-identify
+    description: Each node's refs field lists source file paths. Drift checks these against the changed file list.
+    refs:
+      - path: src/core/evidence.ts
+        symbol: nodeRefs
+  - id: drift-report
+    label: DriftReport
+    kind: process
+    group: g-identify
+    description: "Output: direct (map refs a changed file), unmapped (file changed but not in any map), removedRefs (ref path deleted)."
+    refs:
+      - path: src/core/drift.ts
+  - id: viewer-badge
+    label: Drift Badge (viewer)
+    kind: ui
+    group: g-identify
+    description: Orange warning badge on the sidebar map list when a map has direct drift.
+    refs:
+      - path: viewer/src/components/Sidebar.tsx
+  - id: agent-updates
+    label: Agent updates maps
+    kind: actor
+    group: g-update
+    description: AI agent reads drift report or viewer badge, then patches the outdated map with vibemap patch.
+  - id: validate-after
+    label: vibemap check
+    kind: process
+    group: g-update
+    description: After updating, run check to confirm no broken refs, locked nodes or schema errors remain.
+    refs:
+      - path: src/core/validate.ts
+        symbol: validateProject
+  - id: chokidar
+    label: chokidar (file watcher)
+    kind: service
+    group: g-update
+    description: Watches .vibemap/ folder. When a .vmap.yaml changes, server reloads and broadcasts to the browser.
+    refs:
+      - path: src/server/server.ts
+        symbol: startWatcher
+edges:
+  - from: post-edit-hook
+    to: pending-json
+    label: appends file path
+    kind: writes
+  - from: git-diff
+    to: compute-drift
+    label: changed file list
+    kind: data
+  - from: pending-json
+    to: compute-drift
+    label: pending files
+    kind: data
+  - from: node-refs
+    to: compute-drift
+    label: ref paths
+    kind: data
+  - from: compute-drift
+    to: drift-report
+    label: produces
+    kind: data
+  - from: drift-report
+    to: viewer-badge
+    label: direct drift list
+    kind: data
+  - from: drift-report
+    to: agent-updates
+    label: shows what to fix
+    kind: data
+  - from: agent-updates
+    to: validate-after
+    label: then checks
+    kind: calls
+  - from: agent-updates
+    to: chokidar
+    label: file saved → watcher fires
+    kind: event

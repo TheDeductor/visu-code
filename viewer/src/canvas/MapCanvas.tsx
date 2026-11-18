@@ -1,5 +1,4 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import rough from 'roughjs';
 import type {
   ErdLayout,
   GraphLayout,
@@ -11,9 +10,12 @@ import type {
   VibeAnnotation,
   VibeMap,
 } from '@core/types';
-import { contrastInk, fillForKind, kindLabel, labelFontSize, shapeForKind, wrapText } from '@core/theme';
+import { shapeForKind, labelFontSize, wrapText } from '@core/theme';
 import { layoutEdgePath } from '@core/geometry';
+import { Button } from '@astryxdesign/core/Button';
 import type { MapDetail } from '../api';
+import { Icon } from '../components/icons';
+import { fillForKindToken, strokeForEvidence } from './palette';
 
 interface DragNode {
   id: string;
@@ -54,126 +56,100 @@ interface CanvasProps {
   onZoom?: (zoom: number) => void;
 }
 
-const pathCache = new Map<string, Array<{ d: string; stroke: string; fill: string; strokeWidth: number }>>();
+const NODE_RADIUS = 8;
 
-function hashSeed(text: string): number {
-  let hash = 5381;
-  for (let i = 0; i < text.length; i++) hash = ((hash << 5) + hash + text.charCodeAt(i)) | 0;
-  return Math.abs(hash) || 1;
-}
-
-function roundedPath(box: LayoutBox, radius = 14): string {
+function roundedRectPath(box: LayoutBox, radius = NODE_RADIUS): string {
   const { x, y, w, h } = box;
   const r = Math.min(radius, w / 2, h / 2);
-  return `M ${x + r} ${y} L ${x + w - r} ${y} Q ${x + w} ${y} ${x + w} ${y + r} L ${x + w} ${y + h - r} Q ${x + w} ${y + h} ${x + w - r} ${y + h} L ${x + r} ${y + h} Q ${x} ${y + h} ${x} ${y + h - r} L ${x} ${y + r} Q ${x} ${y} ${x + r} ${y} Z`;
+  return `M ${x + r} ${y} H ${x + w - r} A ${r} ${r} 0 0 1 ${x + w} ${y + r} V ${y + h - r} A ${r} ${r} 0 0 1 ${x + w - r} ${y + h} H ${x + r} A ${r} ${r} 0 0 1 ${x} ${y + h - r} V ${y + r} A ${r} ${r} 0 0 1 ${x + r} ${y} Z`;
 }
 
-function roughPaths(box: LayoutBox, shape: string, fill: string, stroke: string, theme: Theme, seedKey: string, dash?: string): React.ReactNode {
-  const key = `${seedKey}:${box.x}:${box.y}:${box.w}:${box.h}:${shape}:${fill}:${stroke}:${theme.roughness}`;
-  let paths = pathCache.get(key);
-  if (!paths) {
-    const generator = rough.generator();
-    const options = {
-      seed: hashSeed(seedKey),
-      roughness: theme.roughness,
-      stroke,
-      strokeWidth: theme.strokeWidth,
-      fill,
-      fillStyle: 'solid' as const,
-      hachureGap: 8,
-      preserveVertices: true,
-    };
-    let drawable;
-    if (shape === 'ellipse') {
-      drawable = generator.ellipse(box.x + box.w / 2, box.y + box.h / 2, box.w, box.h, options);
-    } else if (shape === 'diamond') {
-      drawable = generator.polygon(
-        [
-          [box.x + box.w / 2, box.y],
-          [box.x + box.w, box.y + box.h / 2],
-          [box.x + box.w / 2, box.y + box.h],
-          [box.x, box.y + box.h / 2],
-        ],
-        options,
-      );
-    } else if (shape === 'parallelogram') {
-      drawable = generator.polygon(
-        [
-          [box.x + 16, box.y],
-          [box.x + box.w, box.y],
-          [box.x + box.w - 16, box.y + box.h],
-          [box.x, box.y + box.h],
-        ],
-        options,
-      );
-    } else if (shape === 'sticky') {
-      drawable = generator.path(
-        `M ${box.x} ${box.y} L ${box.x + box.w - 16} ${box.y} L ${box.x + box.w} ${box.y + 16} L ${box.x + box.w} ${box.y + box.h} L ${box.x} ${box.y + box.h} Z`,
-        options,
-      );
-    } else if (shape === 'rounded') {
-      drawable = generator.path(roundedPath(box), options);
-    } else {
-      drawable = generator.rectangle(box.x, box.y, box.w, box.h, options);
-    }
-    paths = generator.toPaths(drawable).map((path) => ({
-      d: path.d,
-      stroke: String(path.stroke ?? stroke),
-      fill: String(path.fill ?? 'none'),
-      strokeWidth: Number(path.strokeWidth ?? theme.strokeWidth),
-    }));
-    if (pathCache.size > 600) pathCache.clear();
-    pathCache.set(key, paths);
+function NodeShape({
+  box,
+  shape,
+  fill,
+  stroke,
+  dash,
+  strokeWidth,
+}: {
+  box: LayoutBox;
+  shape: string;
+  fill: string;
+  stroke: string;
+  dash?: string;
+  strokeWidth: number;
+}): React.ReactElement {
+  const common = {
+    fill,
+    stroke,
+    strokeWidth,
+    strokeDasharray: dash,
+    strokeLinejoin: 'round' as const,
+    strokeLinecap: 'round' as const,
+  };
+  if (shape === 'ellipse') {
+    return <ellipse cx={box.x + box.w / 2} cy={box.y + box.h / 2} rx={box.w / 2} ry={box.h / 2} {...common} />;
   }
-  return paths.map((path, index) => (
-    <path
-      key={index}
-      d={path.d}
-      fill={path.fill || 'none'}
-      stroke={path.stroke}
-      strokeWidth={path.strokeWidth}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      strokeDasharray={dash}
-    />
-  ));
+  if (shape === 'diamond') {
+    return (
+      <polygon
+        points={`${box.x + box.w / 2},${box.y} ${box.x + box.w},${box.y + box.h / 2} ${box.x + box.w / 2},${box.y + box.h} ${box.x},${box.y + box.h / 2}`}
+        {...common}
+      />
+    );
+  }
+  if (shape === 'parallelogram') {
+    return (
+      <polygon
+        points={`${box.x + 12},${box.y} ${box.x + box.w},${box.y} ${box.x + box.w - 12},${box.y + box.h} ${box.x},${box.y + box.h}`}
+        {...common}
+      />
+    );
+  }
+  if (shape === 'sticky') {
+    return <path d={`M ${box.x} ${box.y} H ${box.x + box.w - 14} L ${box.x + box.w} ${box.y + 14} V ${box.y + box.h} H ${box.x} Z`} {...common} />;
+  }
+  if (shape === 'rect') {
+    return <rect x={box.x} y={box.y} width={box.w} height={box.h} {...common} />;
+  }
+  return <rect x={box.x} y={box.y} width={box.w} height={box.h} rx={NODE_RADIUS} {...common} />;
 }
 
-function evidenceStyle(status: string | undefined, kind: string, planned: boolean): { stroke: string; dash?: string; opacity: number } {
-  if (status === 'stale') return { stroke: '#e03131', opacity: 1 };
-  if (status === 'declared') return { stroke: '#868e96', dash: '4 4', opacity: 1 };
-  if (planned) return { stroke: '#868e96', dash: '7 5', opacity: 0.6 };
-  if (kind === 'external') return { stroke: '#343a40', dash: '7 5', opacity: 1 };
-  return { stroke: '#343a40', opacity: 1 };
-}
-
-function EdgeView({ edge, theme, dimmed, markerId }: { edge: LayoutEdge; theme: Theme; dimmed: boolean; markerId: string }) {
+function EdgeView({ edge, dimmed, markerId }: { edge: LayoutEdge; dimmed: boolean; markerId: string }): React.ReactElement {
   return (
-    <g opacity={dimmed ? 0.18 : 1} className="edge">
-      <path d={layoutEdgePath(edge, 10)} fill="none" stroke="#495057" strokeWidth={theme.strokeWidth} markerEnd={`url(#${markerId})`} />
+    <g opacity={dimmed ? 0.2 : 1} className="edge">
+      <path
+        d={layoutEdgePath(edge, 8)}
+        fill="none"
+        stroke="var(--cnv-edge)"
+        strokeWidth={1.5}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        markerEnd={`url(#${markerId})`}
+      />
     </g>
   );
 }
 
-function EdgeLabelView({ edge, dimmed }: { edge: LayoutEdge; dimmed: boolean }) {
+function EdgeLabelView({ edge, dimmed }: { edge: LayoutEdge; dimmed: boolean }): React.ReactElement | null {
   if (!edge.label || !edge.labelLines.length) return null;
   return (
-    <g opacity={dimmed ? 0.18 : 1} className="edge-label">
+    <g opacity={dimmed ? 0.2 : 1} className="edge-label">
       <title>{edge.label}</title>
       <text
         x={edge.labelPos.x}
-        y={edge.labelPos.y - (edge.labelLines.length - 1) * 8.5}
+        y={edge.labelPos.y - (edge.labelLines.length - 1) * 7}
         textAnchor="middle"
         dominantBaseline="middle"
-        fontSize={12.5}
-        fill="#495057"
-        stroke="var(--canvas-bg, #fff)"
-        strokeWidth={4}
+        fontSize={11.5}
+        fill="var(--cnv-edge-label)"
+        stroke="var(--canvas-bg)"
+        strokeWidth={3}
         paintOrder="stroke"
         strokeLinejoin="round"
       >
         {edge.labelLines.map((line, index) => (
-          <tspan key={index} x={edge.labelPos.x} dy={index === 0 ? 0 : 17}>
+          <tspan key={index} x={edge.labelPos.x} dy={index === 0 ? 0 : 15}>
             {line}
           </tspan>
         ))}
@@ -182,12 +158,22 @@ function EdgeLabelView({ edge, dimmed }: { edge: LayoutEdge; dimmed: boolean }) 
   );
 }
 
-function NodeText({ box, node, theme, beginner }: { box: LayoutBox; node: Extract<VibeMap, { type: 'graph' }>['nodes'][number]; theme: Theme; beginner: boolean }) {
+function NodeText({
+  box,
+  node,
+  theme,
+  beginner,
+}: {
+  box: LayoutBox;
+  node: Extract<VibeMap, { type: 'graph' }>['nodes'][number];
+  theme: Theme;
+  beginner: boolean;
+}): React.ReactElement {
   const fontSize = labelFontSize(theme);
   const lines = box.labelLines;
-  const plainLines = beginner && node.plain ? wrapText(node.plain, Math.max(80, box.w - 26), 11).slice(0, 2) : [];
-  const totalHeight = (lines.length - 1) * (fontSize + 4) + (plainLines.length ? plainLines.length * 13 + 5 : 0);
-  const startY = box.y + box.h / 2 - totalHeight / 2 + fontSize * 0.55;
+  const plainLines = beginner && node.plain ? wrapText(node.plain, Math.max(80, box.w - 24), 10.5).slice(0, 2) : [];
+  const totalHeight = (lines.length - 1) * (fontSize + 3) + (plainLines.length ? plainLines.length * 12 + 4 : 0);
+  const startY = box.y + box.h / 2 - totalHeight / 2 + fontSize * 0.52;
   return (
     <g pointerEvents="none">
       <text
@@ -195,19 +181,27 @@ function NodeText({ box, node, theme, beginner }: { box: LayoutBox; node: Extrac
         y={startY}
         textAnchor="middle"
         dominantBaseline="middle"
-        fill={node.status === 'deprecated' ? '#868e96' : contrastInk(fillForKind(node.kind, theme))}
+        fill="var(--cnv-ink)"
         fontSize={fontSize}
-        fontWeight={600}
+        fontWeight={node.status === 'deprecated' ? 500 : 600}
+        opacity={node.status === 'deprecated' ? 0.65 : 1}
         textDecoration={node.status === 'deprecated' ? 'line-through' : undefined}
       >
         {lines.map((line, index) => (
-          <tspan key={index} x={box.x + box.w / 2} dy={index === 0 ? 0 : fontSize + 4}>
+          <tspan key={index} x={box.x + box.w / 2} dy={index === 0 ? 0 : fontSize + 3}>
             {line}
           </tspan>
         ))}
       </text>
       {plainLines.length ? (
-        <text x={box.x + box.w / 2} y={startY + lines.length * (fontSize + 4) + 2} textAnchor="middle" fontSize={10.5} fill="#495057" opacity={0.85}>
+        <text
+          x={box.x + box.w / 2}
+          y={startY + lines.length * (fontSize + 3) + 1}
+          textAnchor="middle"
+          fontSize={10.5}
+          fill="var(--cnv-ink)"
+          opacity={0.7}
+        >
           {plainLines.map((line, index) => (
             <tspan key={index} x={box.x + box.w / 2} dy={index === 0 ? 0 : 12}>
               {line}
@@ -216,6 +210,49 @@ function NodeText({ box, node, theme, beginner }: { box: LayoutBox; node: Extrac
         </text>
       ) : null}
     </g>
+  );
+}
+
+/** Small lock glyph drawn as SVG so it never depends on an emoji font. */
+function LockBadge({ x, y }: { x: number; y: number }): React.ReactElement {
+  return (
+    <g pointerEvents="none" transform={`translate(${x} ${y})`}>
+      <rect x="0" y="0" width="12" height="12" rx="3" fill="var(--accent)" />
+      <path d="M3.2 5.4V4.4a2.8 2.8 0 0 1 5.6 0v1" fill="none" stroke="var(--panel)" strokeWidth="1.2" strokeLinecap="round" />
+      <rect x="3" y="5.4" width="6" height="4.4" rx="1" fill="var(--panel)" opacity="0.92" />
+    </g>
+  );
+}
+
+function EvidenceMark({ x, y, kind }: { x: number; y: number; kind: 'stale' | 'declared' }): React.ReactElement {
+  return (
+    <svg
+      x={x}
+      y={y}
+      width={8}
+      height={8}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="var(--panel)"
+      strokeWidth={2.6}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      pointerEvents="none"
+    >
+      {kind === 'stale' ? (
+        <>
+          <path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z" />
+          <path d="M12 9v4" />
+          <path d="M12 17h.01" />
+        </>
+      ) : (
+        <>
+          <circle cx="12" cy="12" r="9" />
+          <path d="M9.4 9a2.7 2.7 0 0 1 5.2 1c0 1.8-2.6 2.2-2.6 3.6" />
+          <path d="M12 17h.01" />
+        </>
+      )}
+    </svg>
   );
 }
 
@@ -255,34 +292,38 @@ export function MapCanvas(props: CanvasProps): React.ReactElement {
   const [floorApplied, setFloorApplied] = useState(false);
   const lastLayoutSizeRef = useRef<{ w: number; h: number }>({ w: layout.width, h: layout.height });
 
-  const fit = useCallback((ignoreFloor = false) => {
-    const element = wrapRef.current;
-    if (!element) return;
-    const rect = element.getBoundingClientRect();
-    if (!rect.width || !rect.height) return;
+  const fit = useCallback(
+    (ignoreFloor = false) => {
+      const element = wrapRef.current;
+      if (!element) return;
+      const rect = element.getBoundingClientRect();
+      if (!rect.width || !rect.height) return;
 
-    const naturalZoom = Math.min((rect.width - 70) / Math.max(1, layout.width), (rect.height - 70) / Math.max(1, layout.height));
-    const shouldApplyFloor = !ignoreFloor && naturalZoom < 0.7;
-    const zoom = shouldApplyFloor
-      ? Math.max(0.7, Math.min(1.25, naturalZoom))
-      : Math.max(0.2, Math.min(1.25, naturalZoom));
+      const naturalZoom = Math.min((rect.width - 72) / Math.max(1, layout.width), (rect.height - 72) / Math.max(1, layout.height));
+      const shouldApplyFloor = !ignoreFloor && naturalZoom < 0.7;
+      const zoom = shouldApplyFloor ? Math.max(0.7, Math.min(1.2, naturalZoom)) : Math.max(0.2, Math.min(1.2, naturalZoom));
 
-    setFloorApplied(shouldApplyFloor);
+      setFloorApplied(shouldApplyFloor);
 
-    if (shouldApplyFloor) {
-      let rootNode: { x: number; y: number; w: number; h: number } | undefined;
-      if (layout.type === 'graph' && layout.nodes.length > 0) rootNode = layout.nodes[0];
-      else if (layout.type === 'erd' && layout.entities.length > 0) rootNode = layout.entities[0];
-      else if (layout.type === 'sequence' && layout.participants.length > 0) rootNode = layout.participants[0];
+      if (shouldApplyFloor) {
+        let rootNode: { x: number; y: number; w: number; h: number } | undefined;
+        if (layout.type === 'graph' && layout.nodes.length > 0) rootNode = layout.nodes[0];
+        else if (layout.type === 'erd' && layout.entities.length > 0) rootNode = layout.entities[0];
+        else if (layout.type === 'sequence' && layout.participants.length > 0) rootNode = layout.participants[0];
 
-      if (rootNode) {
-        const rootCenterX = rootNode.x + rootNode.w / 2;
-        const rootCenterY = rootNode.y + rootNode.h / 2;
-        setViewport({
-          zoom,
-          x: rect.width / 2 - rootCenterX * zoom,
-          y: rect.height / 2 - rootCenterY * zoom,
-        });
+        if (rootNode) {
+          setViewport({
+            zoom,
+            x: rect.width / 2 - (rootNode.x + rootNode.w / 2) * zoom,
+            y: rect.height / 2 - (rootNode.y + rootNode.h / 2) * zoom,
+          });
+        } else {
+          setViewport({
+            zoom,
+            x: Math.max(20, (rect.width - layout.width * zoom) / 2),
+            y: Math.max(20, (rect.height - layout.height * zoom) / 2),
+          });
+        }
       } else {
         setViewport({
           zoom,
@@ -290,16 +331,11 @@ export function MapCanvas(props: CanvasProps): React.ReactElement {
           y: Math.max(20, (rect.height - layout.height * zoom) / 2),
         });
       }
-    } else {
-      setViewport({
-        zoom,
-        x: Math.max(20, (rect.width - layout.width * zoom) / 2),
-        y: Math.max(20, (rect.height - layout.height * zoom) / 2),
-      });
-    }
 
-    onZoom?.(zoom);
-  }, [layout, onZoom]);
+      onZoom?.(zoom);
+    },
+    [layout, onZoom],
+  );
 
   useEffect(() => {
     lastLayoutSizeRef.current = { w: layout.width, h: layout.height };
@@ -361,23 +397,17 @@ export function MapCanvas(props: CanvasProps): React.ReactElement {
       return;
     }
     if (draggingNode) {
-      const dx = (event.clientX - draggingNode.startClientX) / viewport.zoom;
-      const dy = (event.clientY - draggingNode.startClientY) / viewport.zoom;
-      setDraggingNode({ ...draggingNode, dx, dy });
+      setDraggingNode({ ...draggingNode, dx: (event.clientX - draggingNode.startClientX) / viewport.zoom, dy: (event.clientY - draggingNode.startClientY) / viewport.zoom });
       return;
     }
     if (draggingAnnotation) {
-      const dx = (event.clientX - draggingAnnotation.startClientX) / viewport.zoom;
-      const dy = (event.clientY - draggingAnnotation.startClientY) / viewport.zoom;
-      setDraggingAnnotation({ ...draggingAnnotation, dx, dy });
+      setDraggingAnnotation({ ...draggingAnnotation, dx: (event.clientX - draggingAnnotation.startClientX) / viewport.zoom, dy: (event.clientY - draggingAnnotation.startClientY) / viewport.zoom });
     }
   };
 
   const onPointerUp = (event: React.PointerEvent<SVGSVGElement>): void => {
     if (draggingNode) {
-      const x = Math.round(draggingNode.box.x + draggingNode.dx);
-      const y = Math.round(draggingNode.box.y + draggingNode.dy);
-      onMoveNode(draggingNode.id, x, y, draggingNode.box.w, draggingNode.box.h);
+      onMoveNode(draggingNode.id, Math.round(draggingNode.box.x + draggingNode.dx), Math.round(draggingNode.box.y + draggingNode.dy), draggingNode.box.w, draggingNode.box.h);
       setDraggingNode(null);
     }
     if (draggingAnnotation) {
@@ -433,19 +463,11 @@ export function MapCanvas(props: CanvasProps): React.ReactElement {
     return (
       <div className="mermaid-wrap" ref={wrapRef}>
         <div className="mermaid-toolbar">
-          <span>Mermaid source (read-only canvas)</span>
-          <button
-            type="button"
-            className="btn small"
-            onClick={() => {
-              void navigator.clipboard?.writeText(layout.source);
-            }}
-          >
-            Copy source
-          </button>
+          <span>Mermaid source (read only)</span>
+          <Button label="Copy source" size="sm" variant="secondary" onClick={() => void navigator.clipboard?.writeText(layout.source)} />
         </div>
         <pre className="mermaid-source">{layout.source}</pre>
-        <p className="muted">Mermaid maps are an escape hatch. Edit the source text in the file; the viewer shows it verbatim once validated.</p>
+        <p className="muted small">Mermaid maps are an escape hatch. Edit the source file; the viewer shows it once validated.</p>
       </div>
     );
   }
@@ -467,18 +489,15 @@ export function MapCanvas(props: CanvasProps): React.ReactElement {
         onPointerUp={onPointerUp}
         onPointerCancel={onPointerUp}
         onPointerLeave={() => setHover(null)}
-        role="application"
-        aria-label={`${parentMap.title} canvas`}
+        role="group"
+        aria-label={`${parentMap.title} diagram`}
       >
         <defs>
-          <marker id={markerId} markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto">
-            <path d="M0,0 L10,4 L0,8 z" fill="#495057" />
+          <marker id={markerId} markerWidth="9" markerHeight="7" refX="8" refY="3.5" orient="auto">
+            <path d="M0,0 L9,3.5 L0,7 Z" fill="var(--cnv-edge)" />
           </marker>
-          <pattern id="vm-grid" width="24" height="24" patternUnits="userSpaceOnUse">
-            <circle cx="1.2" cy="1.2" r="1.2" fill="var(--grid-dot)" />
-          </pattern>
         </defs>
-        <rect className="canvas-bg" width="100%" height="100%" fill="url(#vm-grid)" />
+        <rect className="canvas-bg" width="100%" height="100%" fill="var(--canvas-bg)" />
         <g transform={`translate(${viewport.x} ${viewport.y}) scale(${viewport.zoom})`}>
           {graph
             ? graph.groups.map((group) => (
@@ -488,38 +507,30 @@ export function MapCanvas(props: CanvasProps): React.ReactElement {
                     y={group.y}
                     width={group.w}
                     height={group.h}
-                    rx={14}
-                    fill="var(--group-fill, rgba(233, 236, 239, 0.12))"
-                    stroke="var(--group-stroke, #adb5bd)"
-                    strokeWidth={1.5}
-                    strokeDasharray="6 5"
+                    rx={10}
+                    fill="var(--cnv-group-fill)"
+                    stroke="var(--cnv-group-stroke)"
+                    strokeWidth={1}
+                    strokeDasharray="4 4"
                   />
-                  <text x={group.x + 14} y={group.y + 23} fontSize={13} fontWeight={700} fill="var(--group-label, #495057)">
+                  <text x={group.x + 12} y={group.y + 20} fontSize={11} fontWeight={600} letterSpacing="0.04em" fill="var(--cnv-group-label)">
                     {group.label}
                   </text>
                 </g>
               ))
             : null}
           {graph
-            ? graph.edges.map((edge) => (
-                <EdgeView
-                  key={edge.id}
-                  edge={edge}
-                  theme={theme}
-                  markerId={markerId}
-                  dimmed={!!focusSet && !(focusSet.has(edge.from) && focusSet.has(edge.to))}
-                />
-              ))
+            ? graph.edges.map((edge) => <EdgeView key={edge.id} edge={edge} markerId={markerId} dimmed={!!focusSet && !(focusSet.has(edge.from) && focusSet.has(edge.to))} />)
             : null}
-          {sequence ? <SequenceScene layout={sequence} theme={theme} markerId={markerId} dimmed={!!focusSet} /> : null}
-          {erd ? <ErdScene layout={erd} theme={theme} markerId={markerId} /> : null}
+          {sequence ? <SequenceScene layout={sequence} markerId={markerId} dimmed={!!focusSet} /> : null}
+          {erd ? <ErdScene layout={erd} markerId={markerId} /> : null}
           {graph
             ? graph.nodes.map((box) => {
                 const node = nodeById.get(box.id);
                 if (!node) return null;
                 const evidence = detail.evidence[box.id]?.status;
-                const style = evidenceStyle(evidence, node.kind, node.status === 'planned');
-                const fill = fillForKind(node.kind, theme);
+                const style = strokeForEvidence(evidence, node.status === 'planned', node.kind);
+                const fill = fillForKindToken(node.kind);
                 const dx = nodeDrag?.id === box.id ? nodeDrag.dx : 0;
                 const dy = nodeDrag?.id === box.id ? nodeDrag.dy : 0;
                 const moved = { ...box, x: box.x + dx, y: box.y + dy };
@@ -527,19 +538,28 @@ export function MapCanvas(props: CanvasProps): React.ReactElement {
                 const focused = !focusSet || focusSet.has(box.id);
                 const locked = detail.locked.includes(box.id);
                 const diffState = diff?.states[box.id];
-                const stroke = diffState === 'added' ? '#2f9e44' : diffState === 'modified' ? '#e67700' : selected ? '#1971c2' : connectStart === box.id ? '#f08c00' : style.stroke;
+                const stroke = selected
+                  ? 'var(--cnv-node-stroke-selected)'
+                  : diffState === 'added'
+                    ? 'var(--cnv-added)'
+                    : diffState === 'modified'
+                      ? 'var(--cnv-modified)'
+                      : connectStart === box.id
+                        ? 'var(--accent)'
+                        : style.stroke;
+                const strokeWidth = selected || diffState || connectStart === box.id ? 2 : 1.5;
                 return (
                   <g
                     key={box.id}
                     className={`vm-node${selected ? ' selected' : ''}${locked ? ' locked' : ''}`}
-                    opacity={focused ? style.opacity : 0.18}
+                    opacity={focused ? style.opacity : 0.2}
                     onPointerDown={(event) => nodePointerDown(event, box)}
                     onPointerEnter={(event) => {
                       if (mode === 'edit' || connectMode) return;
                       setHover({
                         x: event.clientX,
                         y: event.clientY,
-                        title: `${node.label} · ${kindLabel(node.kind)}${node.status ? ` · ${node.status}` : ''}`,
+                        title: `${node.label} · ${node.status ?? 'built'}`,
                         text: `${node.plain ?? node.description ?? 'No description yet.'}${node.refs?.length ? `\n${node.refs.map((r) => `${r.path}${r.symbol ? `#${r.symbol}` : ''}`).join('\n')}` : ''}`,
                       });
                     }}
@@ -557,38 +577,44 @@ export function MapCanvas(props: CanvasProps): React.ReactElement {
                         onSelectNode(box.id);
                       }
                     }}
-                    aria-label={`${node.label}, ${kindLabel(node.kind)}${node.status ? `, ${node.status}` : ''}`}
+                    aria-label={`${node.label}, ${node.kind}${node.status ? `, ${node.status}` : ''}`}
                   >
-                    {roughPaths(moved, shapeForKind(node.kind), fill, stroke, theme, `node-${box.id}`, style.dash)}
+                    <title>{`${node.label}\n${node.description ?? node.plain ?? ''}`}</title>
+                    <NodeShape box={moved} shape={shapeForKind(node.kind)} fill={fill} stroke={stroke} dash={style.dash} strokeWidth={strokeWidth} />
                     <NodeText box={moved} node={node} theme={theme} beginner={beginner} />
-                    {locked ? (
-                      <g pointerEvents="none">
-                        <rect x={moved.x + 6} y={moved.y + 6} width={17} height={17} rx={5} fill="#1971c2" />
-                        <text x={moved.x + 14.5} y={moved.y + 18.5} textAnchor="middle" fontSize={10} fill="#fff">
-                          🔒
-                        </text>
-                      </g>
-                    ) : null}
+                    {locked ? <LockBadge x={moved.x + 7} y={moved.y + 7} /> : null}
                     {evidence && evidence !== 'verified' && evidence !== 'planned' ? (
                       <g pointerEvents="none">
-                        <circle cx={moved.x + moved.w - 12} cy={moved.y + 12} r={9} fill={evidence === 'stale' ? '#e03131' : '#868e96'} />
-                        <text x={moved.x + moved.w - 12} y={moved.y + 16} textAnchor="middle" fontSize={11} fontWeight={700} fill="#fff">
-                          {evidence === 'stale' ? '!' : '?'}
-                        </text>
+                        <circle cx={moved.x + moved.w - 11} cy={moved.y + 11} r={7} fill={evidence === 'stale' ? 'var(--cnv-stale)' : 'var(--cnv-declared)'} />
+                        <EvidenceMark
+                          x={moved.x + moved.w - 15}
+                          y={moved.y + 7}
+                          kind={evidence === 'stale' ? 'stale' : 'declared'}
+                        />
                       </g>
                     ) : null}
                     {diffState === 'added' || diffState === 'modified' ? (
-                      <rect x={moved.x - 5} y={moved.y - 5} width={moved.w + 10} height={moved.h + 10} rx={16} fill="none" stroke={diffState === 'added' ? '#2f9e44' : '#e67700'} strokeWidth={3} opacity={0.75} />
+                      <rect
+                        x={moved.x - 4}
+                        y={moved.y - 4}
+                        width={moved.w + 8}
+                        height={moved.h + 8}
+                        rx={NODE_RADIUS + 4}
+                        fill="none"
+                        stroke={diffState === 'added' ? 'var(--cnv-added)' : 'var(--cnv-modified)'}
+                        strokeWidth={1}
+                        opacity={0.5}
+                        strokeDasharray="3 3"
+                      />
                     ) : null}
-                    <title>{`${node.label}\n${node.description ?? node.plain ?? ''}`}</title>
                   </g>
                 );
               })
             : null}
           {diff?.ghosts.map((box) => (
-            <g key={`ghost-${box.id}`} className="vm-diff-ghost" opacity={0.55}>
-              <rect x={box.x} y={box.y} width={box.w} height={box.h} rx={12} fill="rgba(224,49,49,0.05)" stroke="#e03131" strokeWidth={2} strokeDasharray="8 6" />
-              <text x={box.x + box.w / 2} y={box.y + box.h / 2} textAnchor="middle" fontSize={13} fill="#e03131" textDecoration="line-through">
+            <g key={`ghost-${box.id}`} className="vm-diff-ghost" opacity={0.6}>
+              <rect x={box.x} y={box.y} width={box.w} height={box.h} rx={NODE_RADIUS} fill="none" stroke="var(--cnv-removed)" strokeWidth={1.5} strokeDasharray="5 4" />
+              <text x={box.x + box.w / 2} y={box.y + box.h / 2} textAnchor="middle" dominantBaseline="middle" fontSize={12} fill="var(--cnv-removed)" textDecoration="line-through">
                 {box.labelLines.join(' ')}
               </text>
             </g>
@@ -612,38 +638,28 @@ export function MapCanvas(props: CanvasProps): React.ReactElement {
                 >
                   {annotation.type === 'sticky' ? (
                     <>
-                      <rect
-                        x={x}
-                        y={y}
-                        width={w}
-                        height={h}
-                        rx={4}
-                        fill="#fff3bf"
-                        stroke="#f08c00"
-                        strokeWidth={1.5}
-                        style={{ filter: 'drop-shadow(0 2px 5px rgba(0,0,0,0.12))' }}
-                      />
+                      <rect x={x} y={y} width={w} height={h} rx={4} fill="var(--cnv-fill-note)" stroke="var(--cnv-node-stroke)" strokeWidth={1} />
                       {!readOnly && onRemoveAnnotation ? (
                         <g
                           className="vm-annotation-close"
-                          onClick={(e) => {
-                            e.stopPropagation();
+                          onClick={(event) => {
+                            event.stopPropagation();
                             onRemoveAnnotation(annotation.id);
                           }}
-                          onPointerDown={(e) => e.stopPropagation()}
+                          onPointerDown={(event) => event.stopPropagation()}
                           style={{ cursor: 'pointer' }}
                         >
-                          <circle cx={x + w - 12} cy={y + 12} r={8} fill="rgba(0,0,0,0.12)" />
-                          <text x={x + w - 12} y={y + 16} fontSize={12} textAnchor="middle" fill="#5c3b00" fontWeight="bold">×</text>
+                          <circle cx={x + w - 11} cy={y + 11} r={7} fill="var(--canvas-bg)" stroke="var(--line-strong)" strokeWidth={1} />
+                          <path d={`M ${x + w - 14} ${y + 8} L ${x + w - 8} ${y + 14} M ${x + w - 8} ${y + 8} L ${x + w - 14} ${y + 14}`} stroke="var(--cnv-edge)" strokeWidth={1.4} strokeLinecap="round" />
                         </g>
                       ) : null}
                     </>
                   ) : null}
-                  <text x={x + 10} y={y + 22} fontSize={12.5} fill="#3b2f00" style={{ userSelect: 'none', pointerEvents: 'none' }}>
-                    {wrapText(annotation.text ?? '', w - 20, 12.5)
+                  <text x={x + 10} y={y + 20} fontSize={11.5} fill="var(--cnv-ink)" style={{ userSelect: 'none', pointerEvents: 'none' }}>
+                    {wrapText(annotation.text ?? '', w - 20, 11.5)
                       .slice(0, 5)
                       .map((line, index) => (
-                        <tspan key={index} x={x + 10} dy={index === 0 ? 0 : 17}>
+                        <tspan key={index} x={x + 10} dy={index === 0 ? 0 : 15}>
                           {line}
                         </tspan>
                       ))}
@@ -653,43 +669,41 @@ export function MapCanvas(props: CanvasProps): React.ReactElement {
             }
             if (annotation.type === 'arrow' && annotation.points?.length === 2) {
               const [a, b] = annotation.points;
-              return <line key={annotation.id} x1={a[0] + dx} y1={a[1] + dy} x2={b[0] + dx} y2={b[1] + dy} stroke="#495057" strokeWidth={2} markerEnd={`url(#${markerId})`} className="vm-annotation" />;
+              return <line key={annotation.id} x1={a[0] + dx} y1={a[1] + dy} x2={b[0] + dx} y2={b[1] + dy} stroke="var(--cnv-edge)" strokeWidth={1.5} markerEnd={`url(#${markerId})`} className="vm-annotation" />;
             }
             if (annotation.type === 'freehand' && annotation.points?.length) {
               const d = annotation.points.map(([px, py], index) => `${index === 0 ? 'M' : 'L'} ${px + dx} ${py + dy}`).join(' ');
-              return <path key={annotation.id} d={d} fill="none" stroke="#495057" strokeWidth={2} className="vm-annotation" />;
+              return <path key={annotation.id} d={d} fill="none" stroke="var(--cnv-edge)" strokeWidth={1.5} className="vm-annotation" />;
             }
             return null;
           })}
           {graph
-            ? graph.edges.map((edge) => (
-                <EdgeLabelView
-                  key={`label-${edge.id}`}
-                  edge={edge}
-                  dimmed={!!focusSet && !(focusSet.has(edge.from) && focusSet.has(edge.to))}
-                />
-              ))
+            ? graph.edges.map((edge) => <EdgeLabelView key={`label-${edge.id}`} edge={edge} dimmed={!!focusSet && !(focusSet.has(edge.from) && focusSet.has(edge.to))} />)
             : null}
         </g>
       </svg>
       <div className="canvas-tools" role="toolbar" aria-label="Canvas zoom">
-        <button type="button" className="icon-btn" onClick={() => zoomBy(1.2)} aria-label="Zoom in">
-          +
+        <button type="button" className="canvas-tool" onClick={() => zoomBy(1 / 1.2)} aria-label="Zoom out">
+          <Icon name="zoomOut" />
         </button>
-        <span className="zoom-label">{zoomText}</span>
-        <button type="button" className="icon-btn" onClick={() => zoomBy(1 / 1.2)} aria-label="Zoom out">
-          −
+        <span className="zoom-label tabular">{zoomText}</span>
+        <button type="button" className="canvas-tool" onClick={() => zoomBy(1.2)} aria-label="Zoom in">
+          <Icon name="zoomIn" />
         </button>
-        <button type="button" className="icon-btn wide" onClick={() => fit(false)} aria-label="Fit to screen" title="Fit (F)">
-          Fit
+        <button type="button" className="canvas-tool wide" onClick={() => fit(false)} aria-label="Fit diagram" title="Fit (F)">
+          <Icon name="fit" />
+          <span>Fit</span>
         </button>
-        <button type="button" className="icon-btn wide" onClick={() => fit(true)} aria-label="Fit all (unrestricted)" title="Fit all">
-          Fit all
+        <button type="button" className="canvas-tool wide" onClick={() => fit(true)} aria-label="Fit entire diagram" title="Fit entire diagram">
+          <span>All</span>
         </button>
       </div>
       {floorApplied ? (
         <div className="canvas-hint zoom-readability-hint">
-          Zoomed to fit readability — <button type="button" style={{ background: 'none', border: 'none', color: 'var(--accent, #1971c2)', cursor: 'pointer', textDecoration: 'underline', font: 'inherit', padding: '0 4px' }} onClick={() => fit(true)}>Fit all</button>
+          <span>Zoomed so labels stay readable.</span>
+          <button type="button" className="inline-link" onClick={() => fit(true)}>
+            Show the whole map
+          </button>
         </div>
       ) : null}
       {diff ? (
@@ -705,40 +719,52 @@ export function MapCanvas(props: CanvasProps): React.ReactElement {
           <p>{hover.text}</p>
         </div>
       ) : null}
-      {connectMode ? <div className="canvas-hint">Connect mode: click a source node, then a target node. Esc cancels.</div> : null}
+      {connectMode ? <div className="canvas-hint">Click a source node, then a target. Esc cancels.</div> : null}
     </div>
   );
 }
 
-function SequenceScene({ layout, theme, markerId, dimmed }: { layout: SequenceLayout; theme: Theme; markerId: string; dimmed: boolean }) {
-  const participants = new Map(layout.participants.map((p) => [p.id, p]));
+function SequenceScene({ layout, markerId, dimmed }: { layout: SequenceLayout; markerId: string; dimmed: boolean }): React.ReactElement {
+  const participants = new Map(layout.participants.map((participant) => [participant.id, participant]));
   return (
     <g opacity={dimmed ? 0.2 : 1}>
       {layout.fragments.map((fragment) => (
         <g key={fragment.index}>
-          <rect x={fragment.x} y={fragment.y} width={fragment.w} height={fragment.h} fill="#fff9db" fillOpacity={0.55} stroke="#f08c00" strokeWidth={1.4} strokeDasharray="5 4" />
-          <rect x={fragment.x} y={fragment.y - 16} width={Math.max(24, fragment.kind.length * 8 + 16)} height={20} fill="#f08c00" />
-          <text x={fragment.x + 8} y={fragment.y - 2} fontSize={11} fontWeight={700} fill="#fff">
+          <rect x={fragment.x} y={fragment.y} width={fragment.w} height={fragment.h} rx={6} fill="var(--cnv-group-fill)" stroke="var(--cnv-group-stroke)" strokeWidth={1} strokeDasharray="4 4" />
+          <text x={fragment.x + 8} y={fragment.y + 15} fontSize={10} fontWeight={600} fill="var(--cnv-group-label)">
             {fragment.kind}
+            {fragment.label && fragment.label !== fragment.kind ? ` [${fragment.label}]` : ''}
           </text>
-          {fragment.label && fragment.label !== fragment.kind ? (
-            <text x={fragment.x + Math.max(24, fragment.kind.length * 8 + 16) + 8} y={fragment.y - 2} fontSize={11} fill="#7a4b00">
-              [{fragment.label}]
-            </text>
-          ) : null}
         </g>
       ))}
       {layout.participants.map((participant) => {
-        const box: LayoutBox = { id: participant.id, x: participant.x, y: participant.y, w: participant.w, h: participant.h, labelLines: participant.lines, kind: 'service' };
+        const labelY = participant.y + participant.h / 2 - ((participant.lines.length - 1) * 8) / 2;
         return (
           <g key={participant.id} className="vm-node sequence-participant">
-            {roughPaths(box, 'rounded', theme.colors.api, '#343a40', theme, `seq-${participant.id}`)}
+            <rect x={participant.x} y={participant.y} width={participant.w} height={participant.h} rx={NODE_RADIUS} fill="var(--cnv-fill-neutral)" stroke="var(--cnv-node-stroke)" strokeWidth={1.5} />
             {participant.lines.map((line, index) => (
-              <text key={index} x={participant.x + participant.w / 2} y={participant.y + participant.h / 2 - (participant.lines.length - 1) * 9 + index * 18} textAnchor="middle" fontSize={14} fontWeight={600} fill="#1e1e1e">
+              <text
+                key={index}
+                x={participant.x + participant.w / 2}
+                y={labelY + index * 16}
+                textAnchor="middle"
+                dominantBaseline="middle"
+                fontSize={12.5}
+                fontWeight={600}
+                fill="var(--cnv-ink)"
+              >
                 {line}
               </text>
             ))}
-            <line x1={participant.x + participant.w / 2} y1={participant.y + participant.h} x2={participant.x + participant.w / 2} y2={participant.lifelineBottom} stroke="#adb5bd" strokeWidth={1.5} strokeDasharray="6 6" />
+            <line
+              x1={participant.x + participant.w / 2}
+              y1={participant.y + participant.h}
+              x2={participant.x + participant.w / 2}
+              y2={participant.lifelineBottom}
+              stroke="var(--cnv-group-stroke)"
+              strokeWidth={1}
+              strokeDasharray="4 4"
+            />
           </g>
         );
       })}
@@ -751,18 +777,24 @@ function SequenceScene({ layout, theme, markerId, dimmed }: { layout: SequenceLa
         return (
           <g key={step.index}>
             {step.from === step.to ? (
-              <path d={`M ${x1} ${step.y} C ${x1 + 60} ${step.y - 30}, ${x1 + 60} ${step.y + 20}, ${x1} ${step.y + 8}`} fill="none" stroke="#343a40" strokeWidth={1.8} markerEnd={`url(#${markerId})`} />
+              <path
+                d={`M ${x1} ${step.y} C ${x1 + 48} ${step.y - 26}, ${x1 + 48} ${step.y + 18}, ${x1} ${step.y + 7}`}
+                fill="none"
+                stroke="var(--cnv-edge)"
+                strokeWidth={1.5}
+                markerEnd={`url(#${markerId})`}
+              />
             ) : (
-              <line x1={x1} y1={step.y} x2={x2} y2={step.y} stroke="#343a40" strokeWidth={1.8} markerEnd={`url(#${markerId})`} />
+              <line x1={x1} y1={step.y} x2={x2} y2={step.y} stroke="var(--cnv-edge)" strokeWidth={1.5} markerEnd={`url(#${markerId})`} />
             )}
             <text
               x={step.labelX ?? (x1 + x2) / 2}
-              y={step.y - 12}
+              y={step.y - 10}
               textAnchor="middle"
-              fontSize={12}
-              fill="#343a40"
-              stroke="var(--canvas-bg, #fff)"
-              strokeWidth={4}
+              fontSize={11.5}
+              fill="var(--cnv-edge-label)"
+              stroke="var(--canvas-bg)"
+              strokeWidth={3}
               paintOrder="stroke"
               strokeLinejoin="round"
             >
@@ -775,29 +807,33 @@ function SequenceScene({ layout, theme, markerId, dimmed }: { layout: SequenceLa
   );
 }
 
-function ErdScene({ layout, theme, markerId }: { layout: ErdLayout; theme: Theme; markerId: string }) {
+function ErdScene({ layout, markerId }: { layout: ErdLayout; markerId: string }): React.ReactElement {
   return (
     <g>
       {layout.relations.map((relation) => (
-        <EdgeView key={relation.id} edge={relation} theme={theme} dimmed={false} markerId={markerId} />
+        <EdgeView key={relation.id} edge={relation} dimmed={false} markerId={markerId} />
       ))}
       {layout.entities.map((entity) => (
         <g key={entity.id} className="vm-node erd-entity">
-          <rect x={entity.x} y={entity.y} width={entity.w} height={entity.h} rx={7} fill="var(--panel,#fff)" stroke="#343a40" strokeWidth={2} />
-          <path d={`M ${entity.x} ${entity.y + 38} L ${entity.x + entity.w} ${entity.y + 38}`} stroke="#343a40" strokeWidth={1.5} />
-          <rect x={entity.x} y={entity.y} width={entity.w} height={38} rx={7} fill={theme.colors.database} />
-          <text x={entity.x + entity.w / 2} y={entity.y + 24} textAnchor="middle" fontSize={15} fontWeight={700} fill="#1e1e1e">
+          <rect x={entity.x} y={entity.y} width={entity.w} height={entity.h} rx={NODE_RADIUS} fill="var(--cnv-fill-data)" stroke="var(--cnv-node-stroke)" strokeWidth={1.5} />
+          <path d={`M ${entity.x} ${entity.y + 34} H ${entity.x + entity.w}`} stroke="var(--cnv-node-stroke)" strokeWidth={1} />
+          <text x={entity.x + entity.w / 2} y={entity.y + 22} textAnchor="middle" dominantBaseline="middle" fontSize={12.5} fontWeight={600} fill="var(--cnv-ink)">
             {entity.labelLines[0] ?? entity.id}
           </text>
           {entity.fields.map((field, index) => {
-            const y = entity.y + 58 + index * 22;
+            const y = entity.y + 54 + index * 20;
+            const marker = field.key === 'pk' ? 'PK' : field.key === 'fk' ? 'FK' : field.key === 'unique' ? 'UQ' : '';
             return (
               <g key={field.name}>
-                <text x={entity.x + 12} y={y} fontSize={12} fill="#1e1e1e" fontWeight={field.key ? 600 : 400}>
-                  {field.key === 'pk' ? '🔑 ' : field.key === 'fk' ? '↗ ' : field.key === 'unique' ? '✦ ' : ''}
+                {marker ? (
+                  <text x={entity.x + 12} y={y} fontSize={9} fontWeight={700} letterSpacing="0.04em" fill="var(--cnv-edge-label)">
+                    {marker}
+                  </text>
+                ) : null}
+                <text x={entity.x + (marker ? 38 : 12)} y={y} fontSize={11.5} fill="var(--cnv-ink)" fontWeight={field.key ? 600 : 400}>
                   {field.name}
                 </text>
-                <text x={entity.x + entity.w - 12} y={y} textAnchor="end" fontSize={11.5} fill="#6c757d">
+                <text x={entity.x + entity.w - 12} y={y} textAnchor="end" fontSize={10.5} fill="var(--cnv-edge-label)">
                   {field.type}
                 </text>
               </g>

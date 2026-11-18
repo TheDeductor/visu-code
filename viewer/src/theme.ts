@@ -2,39 +2,40 @@ import { defineTheme } from '@astryxdesign/core/theme';
 import { neutralTheme } from '@astryxdesign/theme-neutral/built';
 
 /**
- * Custom Astryx theme for VibeMap, extending theme-neutral.
- * Colors are taken directly from the existing viewer CSS variables (styles.css).
+ * Astryx theme for the viewer.
+ * Values mirror the CSS tokens in styles.css so the library and the
+ * hand-written surfaces resolve to the same palette.
  */
 export const vibemapTheme = defineTheme({
   name: 'vibemap',
   extends: neutralTheme,
   tokens: {
-    // Accent colors
-    '--color-accent': ['#1971c2', '#4dabf7'],
-    '--color-accent-muted': ['#e7f5ff', '#17324a'],
-    '--color-text-accent': ['#1971c2', '#4dabf7'],
-    '--color-icon-accent': ['#1971c2', '#4dabf7'],
+    // Accent
+    '--color-accent': ['#1668b3', '#6bb4f0'],
+    '--color-accent-muted': ['#eaf2fa', '#152b3c'],
+    '--color-text-accent': ['#125a9c', '#8ac6f5'],
+    '--color-icon-accent': ['#1668b3', '#6bb4f0'],
 
-    // Backgrounds
-    '--color-background-body': ['#f5f6f8', '#14171c'],
-    '--color-background-surface': ['#ffffff', '#1c2027'],
-    '--color-background-card': ['#ffffff', '#1c2027'],
-    '--color-background-popover': ['#ffffff', '#222831'],
-    '--color-background-muted': ['#f1f3f5', '#222831'],
+    // Surfaces
+    '--color-background-body': ['#f6f7f9', '#101418'],
+    '--color-background-surface': ['#ffffff', '#161b21'],
+    '--color-background-card': ['#ffffff', '#161b21'],
+    '--color-background-popover': ['#ffffff', '#1c2229'],
+    '--color-background-muted': ['#f3f5f7', '#1c2229'],
 
     // Borders
-    '--color-border': ['#dee2e6', '#333b46'],
-    '--color-border-emphasized': ['#ced4da', '#414b58'],
+    '--color-border': ['#e3e7ec', '#273039'],
+    '--color-border-emphasized': ['#cdd4dc', '#3a4550'],
 
-    // Text & Icons
-    '--color-text-primary': ['#212529', '#e9ecef'],
-    '--color-text-secondary': ['#6c757d', '#9aa4b2'],
-    '--color-icon-primary': ['#212529', '#e9ecef'],
-    '--color-icon-secondary': ['#6c757d', '#9aa4b2'],
+    // Text and icons
+    '--color-text-primary': ['#1b2430', '#e7ecf2'],
+    '--color-text-secondary': ['#5f6b7a', '#9ba6b4'],
+    '--color-icon-primary': ['#2f3a47', '#d5dce4'],
+    '--color-icon-secondary': ['#5f6b7a', '#9ba6b4'],
 
-    // Status colors
-    '--color-success': ['#2f9e44', '#2f9e44'],
-    '--color-warning': ['#e67700', '#e67700'],
-    '--color-error': ['#e03131', '#e03131'],
+    // Status
+    '--color-success': ['#1f7a33', '#63c97c'],
+    '--color-warning': ['#8a4b00', '#efb366'],
+    '--color-error': ['#b42318', '#f0847a'],
   },
 });

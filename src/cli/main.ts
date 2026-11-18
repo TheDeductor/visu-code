@@ -120,13 +120,13 @@ async function runView(): Promise<void> {
   }
   const existing = await existingServer(projectItem);
   if (existing) {
-    out(ui.green(`✓ VibeMap is already running at ${existing.url}`));
+    out(ui.green(`✓ VisuCode is already running at ${existing.url}`));
     if (open) openBrowser(existing.url);
     return;
   }
   const server = await startServer({ root: projectItem.root, host, port, quiet: false });
   out('');
-  out(`${ui.bold('VibeMap')} ${ui.dim(`v${VERSION}`)} is running at ${ui.cyan(server.url)}`);
+  out(`${ui.bold('VisuCode')} ${ui.dim(`v${VERSION}`)} is running at ${ui.cyan(server.url)}`);
   out(ui.dim(`Project: ${projectItem.config.project.name}  ·  ${listMapIds(projectItem).length} maps  ·  Ctrl+C to stop`));
   const check = validateProject(projectItem, { strict: false });
   const badge = check.errors.length ? ui.red(`${check.errors.length} errors`) : ui.green('check ok');
@@ -378,7 +378,7 @@ program
       const diff = diffPreview(before.map, preview.map);
       if (options.json) printJson({ dryRun: true, summary: preview.journalSummary, diff });
       else {
-        out(ui.yellow('Dry run — no files written.'));
+        out(ui.yellow('Dry run: no files written.'));
         out(preview.journalSummary);
         if (diff.length) out(diff.join('\n'));
       }
@@ -764,16 +764,16 @@ program
       const maps = listMapIds(projectItem);
       const reasons: string[] = [];
       if (report.errors.length) {
-        reasons.push(...report.errors.slice(0, 3).map((e) => `${e.code} ${e.file}${e.line ? `:${e.line}` : ''} — ${e.message}`));
+        reasons.push(...report.errors.slice(0, 3).map((e) => `${e.code} ${e.file}${e.line ? `:${e.line}` : ''}: ${e.message}`));
       }
       if (projectItem.config.tracking.mode === 'every-change' && maps.length) {
         if (drift.direct.length) reasons.push(...drift.direct.map((d) => `map "${d.map}" references changed files: ${d.files.slice(0, 4).join(', ')}`));
         if (drift.unmapped.length) reasons.push(`${plural(drift.unmapped.length, 'unmapped changed file')}: ${drift.unmapped.slice(0, 4).join(', ')}`);
-        if (drift.removedRefs.length) reasons.push(`${plural(drift.removedRefs.length, 'broken ref')} — run vibemap check`);
+        if (drift.removedRefs.length) reasons.push(`${plural(drift.removedRefs.length, 'broken ref')}: run vibemap check`);
       }
       if (reasons.length) {
         throw new CliError(
-          `VibeMap is not up to date yet:\n  - ${reasons.join('\n  - ')}\n\nBefore finishing: run \`vibemap check\`, update the affected maps with \`vibemap patch\`, and add \`vibemap change add\`. Then stop again.`,
+          `VisuCode is not up to date yet:\n  - ${reasons.join('\n  - ')}\n\nBefore finishing: run \`vibemap check\`, update the affected maps with \`vibemap patch\`, and add \`vibemap change add\`. Then stop again.`,
           2,
         );
       }
@@ -783,10 +783,10 @@ program
       const report = validateProject(projectItem, { strict: projectItem.config.validation.strict });
       if (report.errors.length) {
         err(formatReport(report));
-        throw new CliError('VibeMap check failed. Fix the errors above, or commit with VIBEMAP_SKIP_HOOKS=1.', EXIT_VALIDATION);
+        throw new CliError('VisuCode check failed. Fix the errors above, or commit with VIBEMAP_SKIP_HOOKS=1.', EXIT_VALIDATION);
       }
       const drift = computeDrift(projectItem);
-      if (drift.direct.length || drift.removedRefs.length) err(ui.yellow(`⚠ VibeMap drift: ${driftSummary(drift)}`));
+      if (drift.direct.length || drift.removedRefs.length) err(ui.yellow(`⚠ VisuCode drift: ${driftSummary(drift)}`));
       return;
     }
     if (event === 'post-commit') {

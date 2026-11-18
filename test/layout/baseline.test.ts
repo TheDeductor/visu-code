@@ -20,14 +20,14 @@ function collectMaps(dir: string): string[] {
   return out.sort();
 }
 
-function mapFileFor(root: string): string[] {
-  return collectMaps(path.join(root, '.vibemap', 'maps'));
+function mapFileFor(mapsDir: string): string[] {
+  return collectMaps(mapsDir);
 }
 
 describe('layout quality baseline', () => {
   const roots = [
-    { name: 'repo', root: process.cwd() },
-    { name: 'ts-web fixture', root: path.join(process.cwd(), 'fixtures', 'ts-web') },
+    { name: 'repo maps', root: path.join(process.cwd(), 'test', 'layout', 'maps') },
+    { name: 'ts-web fixture', root: path.join(process.cwd(), 'fixtures', 'ts-web', '.vibemap', 'maps') },
   ];
 
   for (const { name, root } of roots) {

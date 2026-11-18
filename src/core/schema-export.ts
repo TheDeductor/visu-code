@@ -12,7 +12,7 @@ import {
 export function jsonSchemaBundle(): Record<string, unknown> {
   return {
     $schema: 'http://json-schema.org/draft-07/schema#',
-    title: 'VibeMap file formats',
+    title: 'VisuCode file formats',
     maps: zodToJsonSchema(MapSchema, { name: 'VibeMap', target: 'jsonSchema7' }),
     config: zodToJsonSchema(ConfigSchema, { name: 'VibeMapConfig', target: 'jsonSchema7' }),
     theme: zodToJsonSchema(ThemeSchema, { name: 'VibeMapTheme', target: 'jsonSchema7' }),
@@ -24,11 +24,11 @@ export function jsonSchemaBundle(): Record<string, unknown> {
 }
 
 export function schemaMarkdown(): string {
-  return `# VibeMap file format — quick reference
+  return `# VisuCode file format: quick reference
 
 All files are UTF-8, LF, and start with \`schema: 1\`. Unknown fields are errors.
 
-## Graph map — \`maps/<id>.vmap.yaml\`
+## Graph map: \`maps/<id>.vmap.yaml\`
 
 \`\`\`yaml
 schema: 1
@@ -126,7 +126,7 @@ source: |
 
 Mermaid maps are syntax-checked lightly and rendered as source; they are not evidence-checked at node level.
 
-## Layout sidecar — \`layouts/<id>.layout.json\`
+## Layout sidecar: \`layouts/<id>.layout.json\`
 
 Written by the viewer only. Human-owned.
 
@@ -141,7 +141,7 @@ Written by the viewer only. Human-owned.
 }
 \`\`\`
 
-## Notes — \`notes/<name>.md\`
+## Notes: \`notes/<name>.md\`
 
 \`\`\`md
 ---
@@ -153,7 +153,7 @@ nodes: [auth/login-flow#auth-api]
 Long-form explanation. Link nodes with [[auth/login-flow#auth-api]].
 \`\`\`
 
-## Changes — \`changes/<YYYYMMDD-HHMM>-<slug>.md\`
+## Changes: \`changes/<YYYYMMDD-HHMM>-<slug>.md\`
 
 \`\`\`md
 ---

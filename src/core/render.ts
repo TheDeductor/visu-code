@@ -212,8 +212,8 @@ export function renderMarkdown(map: VibeMap, evidence?: EvidenceMap): string {
   if (map.type === 'graph') {
     lines.push('## Components', '', '| Node | Kind | Status | Evidence | Code |', '|---|---|---|---|---|');
     for (const node of map.nodes) {
-      const ev = evidence?.[node.id]?.status ?? '—';
-      const ref = node.refs?.[0] ? `\`${node.refs[0].path}${node.refs[0].symbol ? `#${node.refs[0].symbol}` : ''}\`` : '—';
+      const ev = evidence?.[node.id]?.status ?? '-';
+      const ref = node.refs?.[0] ? `\`${node.refs[0].path}${node.refs[0].symbol ? `#${node.refs[0].symbol}` : ''}\`` : '-';
       lines.push(`| ${node.label} | ${node.kind} | ${node.status ?? 'built'} | ${ev} | ${ref} |`);
     }
     if (map.walkthrough?.length) {

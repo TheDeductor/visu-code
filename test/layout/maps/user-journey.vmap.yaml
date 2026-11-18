@@ -1,0 +1,134 @@
+schema: 1
+title: Complete User Journey
+level: feature
+direction: down
+summary: "The complete journey from installing VibeMap to using it daily: install, init, bootstrap, view, edit, track changes."
+type: graph
+groups:
+  - id: g-setup
+    label: Phase 1 — Setup
+    kind: layer
+  - id: g-create
+    label: Phase 2 — Create Maps
+    kind: layer
+  - id: g-daily
+    label: Phase 3 — Daily Use
+    kind: layer
+nodes:
+  - id: install
+    label: npm install -g vibemap
+    kind: process
+    group: g-setup
+    description: Install the vibemap CLI globally from npm.
+    status: planned
+  - id: init
+    label: vibemap init
+    kind: process
+    group: g-setup
+    description: Creates .vibemap/ folder, config.yaml, AGENT_GUIDE.md and per-agent instruction files.
+    plain: This sets up everything. Run it once in your project root.
+    refs:
+      - path: src/core/init.ts
+        symbol: initProject
+  - id: bootstrap-step
+    label: vibemap bootstrap
+    kind: process
+    group: g-create
+    description: Scans code and writes BOOTSTRAP_PROMPT.md — a prompt for your AI agent to create the first maps.
+    refs:
+      - path: src/core/bootstrap.ts
+        symbol: bootstrapProject
+  - id: agent-creates
+    label: AI agent creates maps
+    kind: actor
+    group: g-create
+    description: Paste BOOTSTRAP_PROMPT.md into your AI agent. It reads AGENT_GUIDE.md and creates .vmap.yaml files.
+  - id: view-step
+    label: vibemap view
+    kind: process
+    group: g-daily
+    description: Starts the local HTTP server and opens the browser. Live-reloads when maps change.
+    plain: Opens your browser at http://localhost:4317 so you can see the diagrams.
+    refs:
+      - path: src/server/server.ts
+        symbol: VibeMapServer
+  - id: browse-maps
+    label: Browse & explore maps
+    kind: ui
+    group: g-daily
+    description: Use sidebar to pick maps. Zoom/pan the canvas. Click nodes to see code refs and evidence badges.
+    refs:
+      - path: viewer/src/App.tsx
+  - id: edit-maps
+    label: Edit maps (viewer or agent)
+    kind: process
+    group: g-daily
+    description: Human edits in the viewer (nodes get auto-locked). Agent edits via vibemap patch + ops.json.
+    refs:
+      - path: viewer/src/components/Inspector.tsx
+  - id: check-step
+    label: vibemap check
+    kind: process
+    group: g-daily
+    description: Validates all maps. Must pass with zero errors before marking work done.
+    plain: Green = all maps are correct. Red = something is broken.
+    refs:
+      - path: src/core/validate.ts
+        symbol: validateProject
+  - id: drift-check
+    label: Drift detection
+    kind: process
+    group: g-daily
+    description: Automatically runs when code changes. Badges appear on maps that need updating.
+    plain: An orange badge means 'your diagram is out of date'.
+    refs:
+      - path: src/core/drift.ts
+        symbol: computeDrift
+  - id: change-record
+    label: vibemap change add
+    kind: process
+    group: g-daily
+    description: Records why maps changed. Shows in Changes tab with visual diffs.
+    refs:
+      - path: src/core/changes.ts
+edges:
+  - from: install
+    to: init
+    label: then run
+    kind: flow
+  - from: init
+    to: bootstrap-step
+    label: generates AGENT_GUIDE.md
+    kind: flow
+  - from: bootstrap-step
+    to: agent-creates
+    label: paste prompt into agent
+    kind: flow
+  - from: agent-creates
+    to: view-step
+    label: maps created
+    kind: flow
+  - from: view-step
+    to: browse-maps
+    label: opens browser
+    kind: flow
+  - from: browse-maps
+    to: edit-maps
+    label: switch to edit mode
+    kind: flow
+  - from: edit-maps
+    to: check-step
+    label: vibemap check
+    kind: flow
+  - from: check-step
+    to: change-record
+    label: all clear
+    kind: flow
+  - from: drift-check
+    to: edit-maps
+    label: badge triggers update
+    kind: event
+  - from: change-record
+    to: browse-maps
+    label: back to daily browsing
+    kind: flow

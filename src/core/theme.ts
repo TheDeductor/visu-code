@@ -1,9 +1,9 @@
 import type { NodeKind, Theme } from './types.js';
 
-export const FONT_SIZE = 16;
-export const LINE_HEIGHT = 21;
-export const NODE_PADDING_X = 18;
-export const NODE_PADDING_Y = 16;
+export const FONT_SIZE = 13;
+export const LINE_HEIGHT = 18;
+export const NODE_PADDING_X = 16;
+export const NODE_PADDING_Y = 13;
 
 export function measureText(text: string, fontSize = FONT_SIZE): number {
   // Average glyph width approximation; deliberately a little generous so labels never clip.
@@ -46,11 +46,11 @@ export function wrapText(text: string, maxWidth: number, fontSize = FONT_SIZE): 
 }
 
 export function labelFontSize(theme: Theme): number {
-  return theme.font === 'code' ? 14 : FONT_SIZE;
+  return theme.font === 'code' ? 12 : FONT_SIZE;
 }
 
 export function labelLineHeight(theme: Theme): number {
-  return theme.font === 'code' ? 19 : LINE_HEIGHT;
+  return theme.font === 'code' ? 17 : LINE_HEIGHT;
 }
 
 export type NodeShape = 'rounded' | 'rect' | 'ellipse' | 'diamond' | 'sticky' | 'parallelogram';
@@ -135,12 +135,3 @@ export function kindLabel(kind: NodeKind | string): string {
   return names[kind] ?? kind;
 }
 
-export function contrastInk(fill: string): string {
-  const hex = fill.replace('#', '');
-  if (hex.length !== 6) return '#1e1e1e';
-  const r = parseInt(hex.slice(0, 2), 16);
-  const g = parseInt(hex.slice(2, 4), 16);
-  const b = parseInt(hex.slice(4, 6), 16);
-  const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
-  return luminance > 0.65 ? '#1e1e1e' : '#ffffff';
-}

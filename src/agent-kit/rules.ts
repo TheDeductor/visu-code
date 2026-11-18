@@ -36,7 +36,7 @@ export function managedBlock(config: ProjectConfig): string {
   const groups = config.limits.maxGroups;
   const ratio = config.limits.warnEdgeRatio;
   return `${MANAGED_START}
-## VibeMap (visual project memory)
+## VisuCode (visual project memory)
 Read \`.vibemap/AGENT_GUIDE.md\` once per session.
 - Before editing: \`vibemap context --area <path>\`.
 - After editing: \`vibemap patch\`, \`vibemap check\`, \`vibemap change add\`.
@@ -50,7 +50,7 @@ ${MANAGED_END}`;
 
 export function cursorBlock(config: ProjectConfig): string {
   return `---
-description: VibeMap visual project memory
+description: VisuCode visual project memory
 alwaysApply: true
 ---
 
@@ -143,7 +143,7 @@ function hookCommand(event: string): string {
   return `(command -v vibemap >/dev/null 2>&1 && vibemap hook ${event}) || npx --no-install vibemap hook ${event}`;
 }
 
-/** Merge VibeMap hooks into Claude Code settings without touching unrelated hooks. */
+/** Merge VisuCode hooks into Claude Code settings without touching unrelated hooks. */
 export function installClaudeHooks(root: string): AgentWriteResult {
   const rel = '.claude/settings.json';
   const abs = path.join(root, rel);
@@ -207,7 +207,7 @@ export function installGitHooks(root: string): AgentWriteResult[] {
       'pre-commit',
       `#!/bin/sh
 ${GIT_HOOK_MARKER}
-# Blocks commits that leave VibeMap invalid. Set VIBEMAP_SKIP_HOOKS=1 to bypass.
+# Blocks commits that leave VisuCode invalid. Set VIBEMAP_SKIP_HOOKS=1 to bypass.
 if [ "$VIBEMAP_SKIP_HOOKS" = "1" ]; then exit 0; fi
 if command -v vibemap >/dev/null 2>&1; then
   VIBEMAP_BIN="vibemap"
@@ -218,7 +218,7 @@ else
 fi
 $VIBEMAP_BIN check || {
   echo ""
-  echo "VibeMap check failed. Fix the errors above, or commit with VIBEMAP_SKIP_HOOKS=1."
+  echo "VisuCode check failed. Fix the errors above, or commit with VIBEMAP_SKIP_HOOKS=1."
   exit 1
 }
 `,
@@ -244,7 +244,7 @@ $VIBEMAP_BIN change seal --latest >/dev/null 2>&1 || true
     if (fs.existsSync(abs)) {
       const existing = fs.readFileSync(abs, 'utf8');
       if (!existing.includes(GIT_HOOK_MARKER)) {
-        results.push({ file: `.git/hooks/${name}`, action: 'skipped', note: 'existing hook not managed by VibeMap' });
+        results.push({ file: `.git/hooks/${name}`, action: 'skipped', note: 'existing hook not managed by VisuCode' });
         continue;
       }
     }
@@ -267,7 +267,7 @@ export function removeGitHooks(root: string): AgentWriteResult[] {
     if (!fs.existsSync(abs)) continue;
     const content = fs.readFileSync(abs, 'utf8');
     if (!content.includes(GIT_HOOK_MARKER)) {
-      results.push({ file: `.git/hooks/${name}`, action: 'skipped', note: 'not managed by VibeMap' });
+      results.push({ file: `.git/hooks/${name}`, action: 'skipped', note: 'not managed by VisuCode' });
       continue;
     }
     fs.rmSync(abs, { force: true });

@@ -1,4 +1,4 @@
-import type { Issue, MapSummary, VibeMap } from '@core/types';
+import type { Issue } from '@core/types';
 
 export function classNames(...values: Array<string | false | null | undefined>): string {
   return values.filter(Boolean).join(' ');
@@ -37,16 +37,6 @@ export async function copyText(text: string): Promise<boolean> {
   }
 }
 
-export function downloadText(filename: string, text: string, type = 'text/plain'): void {
-  const blob = new Blob([text], { type });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = filename;
-  link.click();
-  URL.revokeObjectURL(url);
-}
-
 export function mapFolder(id: string): string {
   const index = id.lastIndexOf('/');
   return index === -1 ? '' : id.slice(0, index);
@@ -54,21 +44,6 @@ export function mapFolder(id: string): string {
 
 export function mapLeaf(id: string): string {
   return id.slice(id.lastIndexOf('/') + 1);
-}
-
-export function mapIcon(map: Pick<MapSummary, 'type' | 'level'>): string {
-  if (map.type === 'sequence') return '⇄';
-  if (map.type === 'erd') return '▤';
-  if (map.type === 'mermaid') return 'M';
-  if (map.level === 'overview') return '◎';
-  if (map.level === 'detail') return '◌';
-  return '▢';
-}
-
-export function checkTone(errors: number, warnings: number): 'error' | 'warn' | 'ok' {
-  if (errors) return 'error';
-  if (warnings) return 'warn';
-  return 'ok';
 }
 
 export function issueLocation(issue: Issue): string {
@@ -106,18 +81,6 @@ export function parseBodySections(body: string): BodySection[] {
   }
   push();
   return sections;
-}
-
-export function nodeLabel(map: VibeMap | undefined, id: string): string {
-  if (!map) return id;
-  if (map.type === 'graph') return map.nodes.find((n) => n.id === id)?.label ?? id;
-  if (map.type === 'sequence') return map.participants.find((p) => p.id === id)?.label ?? id;
-  if (map.type === 'erd') return map.entities.find((e) => e.id === id)?.label ?? id;
-  return id;
-}
-
-export function clamp(value: number, min: number, max: number): number {
-  return Math.min(max, Math.max(min, value));
 }
 
 export function shortPath(path: string, max = 46): string {

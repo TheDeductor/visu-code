@@ -150,7 +150,7 @@ export function createYamlDocument(value: unknown): Document.Parsed<ParsedNode, 
 }
 
 /**
- * VibeMap files are optimised for git diffs: every collection is block style.
+ * VisuCode files are optimised for git diffs: every collection is block style.
  * YAML documents created by adding to an empty `[]` default to flow style and
  * would otherwise turn a whole map into one enormous line after the first patch.
  */

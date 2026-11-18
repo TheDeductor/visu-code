@@ -191,7 +191,7 @@ export async function addAgent(root: string, agent: AgentTarget): Promise<Projec
 
 export function initNextSteps(result: InitResult): string {
   const lines: string[] = [];
-  lines.push(`VibeMap initialised in ${result.root}`);
+  lines.push(`VisuCode initialised in ${result.root}`);
   if (result.scan) {
     lines.push(`Scanned ${result.scan.files} files, ${result.scan.routes} routes, ${result.scan.models} models in ${result.scan.durationMs} ms.`);
   }

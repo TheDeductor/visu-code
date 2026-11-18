@@ -1,5 +1,4 @@
 import React from 'react';
-import { Badge } from '@astryxdesign/core/Badge';
 import { Button } from '@astryxdesign/core/Button';
 import { IconButton } from '@astryxdesign/core/IconButton';
 import { Popover } from '@astryxdesign/core/Popover';
@@ -9,14 +8,22 @@ import { Tab, TabList } from '@astryxdesign/core/TabList';
 import type { CheckReport, MapSummary, ViewerTab } from '@core/types';
 import type { MapDetail, ProjectInfo } from '../api';
 import { classNames } from '../util';
+import { Icon, VisuCodeMark } from './icons';
 
-const TABS: Array<{ id: ViewerTab; label: string; key: string }> = [
-  { id: 'maps', label: 'Maps', key: 'M' },
-  { id: 'changes', label: 'Changes', key: 'C' },
-  { id: 'timeline', label: 'Timeline', key: 'T' },
-  { id: 'phases', label: 'Phases', key: 'P' },
-  { id: 'notes', label: 'Notes', key: 'N' },
-  { id: 'coverage', label: 'Coverage', key: 'V' },
+const TABS: Array<{ id: ViewerTab; label: string }> = [
+  { id: 'maps', label: 'Maps' },
+  { id: 'changes', label: 'Changes' },
+  { id: 'timeline', label: 'Timeline' },
+  { id: 'phases', label: 'Phases' },
+  { id: 'notes', label: 'Notes' },
+  { id: 'coverage', label: 'Coverage' },
+];
+
+const EXPORTS: Array<{ format: string; label: string }> = [
+  { format: 'svg', label: 'SVG' },
+  { format: 'mermaid', label: 'Mermaid' },
+  { format: 'md', label: 'Markdown' },
+  { format: 'excalidraw', label: 'Excalidraw' },
 ];
 
 export function TopBar({
@@ -38,10 +45,7 @@ export function TopBar({
   onHelp,
   onExport,
   onRefresh,
-  sidebarCollapsed,
-  onToggleSidebar,
-  inspectorCollapsed,
-  onToggleInspector,
+  onMenu,
 }: {
   project: ProjectInfo | null;
   detail: MapDetail | null;
@@ -61,98 +65,88 @@ export function TopBar({
   onHelp: () => void;
   onExport: (format: string) => void;
   onRefresh: () => void;
-  sidebarCollapsed?: boolean;
-  onToggleSidebar?: () => void;
-  inspectorCollapsed?: boolean;
-  onToggleInspector?: () => void;
+  onMenu: () => void;
 }): React.ReactElement {
   const errors = check?.errors.length ?? 0;
   const warnings = check?.warnings.length ?? 0;
+  const statusLabel = errors ? `${errors} error${errors === 1 ? '' : 's'}` : warnings ? `${warnings} warning${warnings === 1 ? '' : 's'}` : 'All checks pass';
+  const statusTone = errors ? 'has-errors' : warnings ? 'has-warnings' : 'is-ok';
+
   return (
     <header className="topbar">
       <div className="topbar-brand">
-        {onToggleSidebar && (
-          <IconButton
-            label={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-            tooltip={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-            icon={<span aria-hidden="true">{sidebarCollapsed ? '☰' : '◀'}</span>}
-            variant="ghost"
-            size="sm"
-            onClick={onToggleSidebar}
-          />
-        )}
-        <div className="logo" aria-hidden="true">
-          VM
-        </div>
+        <IconButton className="only-mobile" label="Open map list" tooltip="Open map list" icon={<Icon name="menu" />} variant="ghost" size="sm" onClick={onMenu} />
+        <span className="brand-mark">
+          <VisuCodeMark height={20} />
+        </span>
         <div className="brand-copy">
-          <strong>{project?.name ?? 'VibeMap'}</strong>
-          <span className="muted">
-            {detail ? (
-              <>
-                {detail.id}
-                {summary ? ` · ${summary.nodeCount} nodes` : ''}
-              </>
-            ) : (
-              'visual project memory'
-            )}
-          </span>
+          <strong>{project?.name ?? 'VisuCode'}</strong>
+          <span>{detail ? `${detail.id}${summary ? ` · ${summary.nodeCount} nodes` : ''}` : 'Visual project memory'}</span>
         </div>
       </div>
-      <TabList value={tab} onChange={(val) => onTab(val as ViewerTab)} size="sm">
-        {TABS.map((item) => (
-          <Tab key={item.id} value={item.id} label={item.label} />
-        ))}
-      </TabList>
+
+      <div className="topbar-tabs">
+        <TabList value={tab} onChange={(val) => onTab(val as ViewerTab)} size="sm">
+          {TABS.map((item) => (
+            <Tab key={item.id} value={item.id} label={item.label} />
+          ))}
+        </TabList>
+      </div>
+
       <div className="topbar-actions">
-        <IconButton label="Search (Ctrl/Cmd+K)" tooltip="Search (Ctrl/Cmd+K)" icon={<span aria-hidden="true">⌕</span>} variant="ghost" size="sm" onClick={onSearch} />
+        <IconButton label="Search" tooltip="Search (Ctrl or Cmd + K)" icon={<Icon name="search" />} variant="ghost" size="sm" onClick={onSearch} />
+
         <Popover
-          label="Validation problems"
+          label="Validation status"
           placement="below"
           alignment="end"
           content={
-            <div style={{ padding: '8px 12px' }}>
-              <div><strong>{errors ? `${errors} error${errors === 1 ? '' : 's'}` : warnings ? `${warnings} warning${warnings === 1 ? '' : 's'}` : 'Check passed'}</strong></div>
-              <div style={{ marginTop: '8px' }}>
-                <Button label="View in panel" size="sm" variant="secondary" onClick={onProblems} />
+            <div className="popover-menu">
+              <div className="popover-title">
+                {errors ? `${errors} error${errors === 1 ? '' : 's'}` : warnings ? `${warnings} warning${warnings === 1 ? '' : 's'}` : 'All checks pass'}
               </div>
+              <Button label="View problems" size="sm" variant="secondary" onClick={onProblems} />
             </div>
           }
         >
-          <button type="button" className={classNames('check-pill', errors ? 'has-errors' : warnings ? 'has-warnings' : 'is-ok')} title="Validation problems">
-            <Badge
-              label={`${errors ? `${errors} error${errors === 1 ? '' : 's'}` : warnings ? `${warnings} warning${warnings === 1 ? '' : 's'}` : 'check ok'} ${problemsOpen ? '▾' : '▸'}`}
-              variant={errors ? 'error' : warnings ? 'warning' : 'success'}
-            />
+          <button type="button" className={classNames('status-chip', statusTone)} aria-expanded={problemsOpen}>
+            <Icon name={errors || warnings ? 'alert' : 'check'} size={14} />
+            <span>{statusLabel}</span>
+            <Icon name="chevronDown" size={14} />
           </button>
         </Popover>
-        <span className={`live-dot live-${live}`} title={live === 'live' ? 'Live updates connected' : live === 'connecting' ? 'Connecting…' : 'Disconnected'} />
-        <Switch label="Beginner" value={beginner} onChange={(val) => onBeginner(val)} size="sm" />
+
+        <span className={classNames('conn-state', 'hide-small', live === 'offline' && 'is-offline')} aria-live="polite">
+          {live === 'live' ? 'Live' : live === 'connecting' ? 'Connecting' : 'Offline'}
+        </span>
+
+        <span className="hide-small">
+          <Switch label="Beginner" value={beginner} onChange={(val) => onBeginner(val)} size="sm" />
+        </span>
+
         <SegmentedControl label="Mode" value={mode} onChange={(val) => onMode(val as 'view' | 'edit')} size="sm">
           <SegmentedControlItem value="view" label="View" />
           <SegmentedControlItem value="edit" label="Edit" />
         </SegmentedControl>
-        <div className="menu-wrap">
-          <IconButton label="Export menu" tooltip="Export" icon={<span aria-hidden="true">⇩</span>} variant="ghost" size="sm" />
-          <div className="menu">
-            <Button label="Export SVG" variant="ghost" size="sm" onClick={() => onExport('svg')} />
-            <Button label="Export Mermaid" variant="ghost" size="sm" onClick={() => onExport('mermaid')} />
-            <Button label="Export Markdown" variant="ghost" size="sm" onClick={() => onExport('md')} />
-            <Button label="Export Excalidraw" variant="ghost" size="sm" onClick={() => onExport('excalidraw')} />
-          </div>
-        </div>
-        <IconButton label="Refresh" tooltip="Refresh from disk" icon={<span aria-hidden="true">↻</span>} variant="ghost" size="sm" onClick={onRefresh} />
-        <IconButton label="Help" tooltip="Keyboard shortcuts (?)" icon={<span aria-hidden="true">?</span>} variant="ghost" size="sm" onClick={onHelp} />
-        <IconButton label="Settings" tooltip="Settings" icon={<span aria-hidden="true">⚙</span>} variant="ghost" size="sm" onClick={onSettings} />
-        {tab === 'maps' && onToggleInspector && (
-          <IconButton
-            label={inspectorCollapsed ? 'Expand inspector' : 'Collapse inspector'}
-            tooltip={inspectorCollapsed ? 'Expand inspector' : 'Collapse inspector'}
-            icon={<span aria-hidden="true">{inspectorCollapsed ? '◀' : '▶'}</span>}
-            variant="ghost"
-            size="sm"
-            onClick={onToggleInspector}
-          />
-        )}
+
+        <Popover
+          label="Export diagram"
+          placement="below"
+          alignment="end"
+          content={
+            <div className="popover-menu">
+              {EXPORTS.map((item) => (
+                <Button key={item.format} label={item.label} variant="ghost" size="sm" onClick={() => onExport(item.format)} />
+              ))}
+            </div>
+          }
+        >
+          <IconButton className="hide-small" label="Export diagram" tooltip="Export" icon={<Icon name="download" />} variant="ghost" size="sm" />
+        </Popover>
+
+        <IconButton className="hide-small" label="Refresh from disk" tooltip="Refresh from disk" icon={<Icon name="refresh" />} variant="ghost" size="sm" onClick={onRefresh} />
+        <IconButton className="hide-small" label="Keyboard shortcuts" tooltip="Keyboard shortcuts (?)" icon={<Icon name="help" />} variant="ghost" size="sm" onClick={onHelp} />
+        <IconButton label="Settings" tooltip="Settings" icon={<Icon name="settings" />} variant="ghost" size="sm" onClick={onSettings} />
       </div>
     </header>
   );

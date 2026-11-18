@@ -1,6 +1,6 @@
 # Agent integration
 
-VibeMap is agent-agnostic. The CLI, MCP server, context digest and rules blocks
+VisuCode is agent-agnostic. The CLI, MCP server, context digest and rules blocks
 work with any tool that can run a command or read a file.
 
 ## Recommended loop
@@ -54,8 +54,8 @@ re-init and the surrounding file is preserved. Supported targets:
 - `stop` exits `2` with a reminder while tracked files are unpatched.
 - `pre-commit` exits `2` on validation errors.
 
-If the binary is not globally linked, use the absolute path:
-`node D:/visu-code/dist/cli.js hook post-edit`.
+If the binary is not globally linked, use the absolute path to the build
+output in your checkout: `node /absolute/path/to/visu-code/dist/cli.js hook post-edit`.
 
 ## MCP
 
@@ -66,7 +66,7 @@ Register the stdio server:
   "mcpServers": {
     "vibemap": {
       "command": "node",
-      "args": ["D:/visu-code/dist/cli.js", "--root", "D:/path/to/project", "mcp"]
+      "args": ["/absolute/path/to/visu-code/dist/cli.js", "--root", "/absolute/path/to/project", "mcp"]
     }
   }
 }
@@ -74,20 +74,20 @@ Register the stdio server:
 
 Tools:
 
-- `vibemap_context` — digest with revision and `next` hints.
-- `vibemap_inspect` — layout/geometry diagnostics.
-- `vibemap_check` — validation report.
+- `vibemap_context`: digest with revision and `next` hints.
+- `vibemap_inspect`: layout/geometry diagnostics.
+- `vibemap_check`: validation report.
 - `vibemap_get_map` / `vibemap_list_maps`.
-- `vibemap_patch` — dry-run or apply; accepts an `origin` of `agent`.
-- `vibemap_suggest` — evidence gaps.
-- `vibemap_change_add` — delta against the stored baseline.
+- `vibemap_patch`: dry-run or apply; accepts an `origin` of `agent`.
+- `vibemap_suggest`: evidence gaps.
+- `vibemap_change_add`: delta against the stored baseline.
 
 Resources: `vibemap://maps/<id>` and `vibemap://notes/<path>` (read-only).
 
 ## Generic prompt
 
 ```text
-You are working in a project with VibeMap visual memory in .vibemap/.
+You are working in a project with VisuCode visual memory in .vibemap/.
 Read .vibemap/AGENT_GUIDE.md once. Before editing an area, run
 `vibemap context --area <path>`. After editing, patch the affected map, run
 `vibemap check`, and add a change entry. Use refs to real files/symbols.

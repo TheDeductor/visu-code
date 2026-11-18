@@ -14,15 +14,15 @@ function bulletList(items: string[], limit = 40): string {
 }
 
 export function buildBootstrapPrompt(project: Project, facts: Facts): string {
-  const routes = facts.routes.map((r) => `\`${r.method} ${r.path}\` — \`${r.file}:${r.line}\``);
-  const models = facts.models.map((m) => `\`${m.name}\` — \`${m.file}\`${m.fields.length ? ` (${m.fields.slice(0, 8).join(', ')})` : ''}`);
+  const routes = facts.routes.map((r) => `\`${r.method} ${r.path}\`: \`${r.file}:${r.line}\``);
+  const models = facts.models.map((m) => `\`${m.name}\`: \`${m.file}\`${m.fields.length ? ` (${m.fields.slice(0, 8).join(', ')})` : ''}`);
   const entrypoints = facts.entrypoints.map((e) => `\`${e}\``);
   const env = facts.env.map((e) => `\`${e.name}\` (${e.files.slice(0, 2).join(', ')})`);
   const deps = facts.deps
     .filter((d) => !d.dev)
     .slice(0, 30)
     .map((d) => `\`${d.name}@${d.version}\``);
-  return `# VibeMap bootstrap prompt
+  return `# VisuCode bootstrap prompt
 
 You are the coding agent for **${project.config.project.name}**. Your job is to create a small, accurate, visual map of this existing project in \`.vibemap/\`.
 

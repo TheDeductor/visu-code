@@ -53,7 +53,7 @@ export function doctorProject(root: string): DoctorCheck[] {
     execFileSync('git', ['rev-parse', '--is-inside-work-tree'], { cwd: project.root, stdio: 'ignore' });
     checks.push({ name: 'Git', status: 'ok', detail: 'repository detected (history available)' });
   } catch {
-    checks.push({ name: 'Git', status: 'warn', detail: 'not a git repository — journal-only history' });
+    checks.push({ name: 'Git', status: 'warn', detail: 'not a git repository: journal-only history' });
   }
   const cache = path.join(project.vibemapDir, '.cache');
   try {

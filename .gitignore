@@ -2,12 +2,26 @@ node_modules/
 dist/
 .tmp/
 .commandcode/
-.vibemap/
 *.log
 .DS_Store
 Thumbs.db
 coverage/
 test-results/
 playwright-report/
-demo/.vibemap/.cache/
-fixtures/**/.vibemap/.cache/
+
+# Local VisuCode workspace for this checkout. Not part of the published project.
+/.vibemap/
+/.visucode/
+/AGENTS.md
+**/.vibemap/.cache/
+
+# Screenshots of the local workspace.
+/docs/screens/
+/docs/ui/
+
+# Internal planning and design notes.
+PLAN.md
+REMAINING.md
+docs/layout/
+docs/layout-baseline.md
+docs/layout-comparison.md

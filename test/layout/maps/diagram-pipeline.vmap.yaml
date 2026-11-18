@@ -1,0 +1,156 @@
+schema: 1
+title: Diagram Generation Pipeline
+level: feature
+direction: right
+summary: "How YAML map data flows from disk all the way to a pixel-perfect canvas on the screen. Each box handles one step."
+type: graph
+groups:
+  - id: g-input
+    label: Input
+    kind: layer
+  - id: g-parse
+    label: Parse & Validate
+    kind: layer
+  - id: g-layout
+    label: Layout
+    kind: layer
+  - id: g-render
+    label: Render
+    kind: layer
+nodes:
+  - id: vmap-src
+    label: .vmap.yaml on disk
+    kind: file
+    group: g-input
+    description: "Raw YAML: title, nodes, edges, groups, type, direction."
+    refs:
+      - path: .vibemap/maps
+  - id: layout-sidecar
+    label: .layout.json sidecar
+    kind: file
+    group: g-input
+    description: Stores user-pinned node positions. Merged with auto-layout if it exists.
+    refs:
+      - path: .vibemap/layouts
+  - id: yaml-parse
+    label: YAML Parser
+    kind: module
+    group: g-parse
+    description: Parses YAML text into a JS object. Preserves comments and key order for safe round-trips.
+    refs:
+      - path: src/core/yaml.ts
+  - id: schema-validate
+    label: Schema Validator
+    kind: module
+    group: g-parse
+    description: Zod schemas check that the parsed object is a valid VibeMap (correct types, required fields).
+    refs:
+      - path: src/core/schema.ts
+  - id: evidence
+    label: Evidence Resolver
+    kind: module
+    group: g-parse
+    description: "Checks every node ref: does the file exist? Does the symbol exist? Returns verified/stale/declared."
+    refs:
+      - path: src/core/evidence.ts
+        symbol: resolveEvidence
+  - id: layout-graph
+    label: Graph Layout
+    kind: service
+    group: g-layout
+    description: Ranks nodes into layers, orders them to minimise crossings, resolves overlaps. Returns pixel coordinates.
+    refs:
+      - path: src/core/layout.ts
+        symbol: layoutGraph
+  - id: layout-seq
+    label: Sequence Layout
+    kind: service
+    group: g-layout
+    description: Places participants horizontally, draws lifelines, positions steps on rows.
+    refs:
+      - path: src/core/layout.ts
+        symbol: layoutSequence
+  - id: layout-erd
+    label: ERD Layout
+    kind: service
+    group: g-layout
+    description: Lays out entities like graph nodes, adds field rows inside each table box.
+    refs:
+      - path: src/core/layout.ts
+        symbol: layoutErdMap
+  - id: map-canvas-render
+    label: MapCanvas (SVG)
+    kind: component
+    group: g-render
+    description: React component that draws everything onto an SVG using roughjs for hand-drawn style.
+    refs:
+      - path: viewer/src/canvas/MapCanvas.tsx
+  - id: svg-export
+    label: SVG / PNG Export
+    kind: module
+    group: g-render
+    description: Server-side rendering to SVG string. Used for export commands and static output.
+    refs:
+      - path: src/core/render.ts
+        symbol: renderSvg
+  - id: excalidraw-export
+    label: Excalidraw Export
+    kind: module
+    group: g-render
+    description: Converts layout to Excalidraw JSON format for external editing.
+    refs:
+      - path: src/core/render.ts
+        symbol: renderExcalidraw
+edges:
+  - from: vmap-src
+    to: yaml-parse
+    label: readFileSync
+    kind: data
+  - from: layout-sidecar
+    to: layout-graph
+    label: pinned positions
+    kind: data
+  - from: yaml-parse
+    to: schema-validate
+    label: parsed object
+    kind: data
+  - from: schema-validate
+    to: evidence
+    label: valid VibeMap
+    kind: data
+  - from: schema-validate
+    to: layout-graph
+    label: graph map
+    kind: data
+  - from: schema-validate
+    to: layout-seq
+    label: sequence map
+    kind: data
+  - from: schema-validate
+    to: layout-erd
+    label: erd map
+    kind: data
+  - from: layout-graph
+    to: map-canvas-render
+    label: GraphLayout (pixels)
+    kind: data
+  - from: layout-seq
+    to: map-canvas-render
+    label: SequenceLayout
+    kind: data
+  - from: layout-erd
+    to: map-canvas-render
+    label: ErdLayout
+    kind: data
+  - from: layout-graph
+    to: svg-export
+    label: layout result
+    kind: data
+  - from: layout-graph
+    to: excalidraw-export
+    label: layout result
+    kind: data
+  - from: evidence
+    to: map-canvas-render
+    label: evidence badges
+    kind: data
